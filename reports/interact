@@ -1,0 +1,18 @@
+#!/bin/bash
+
+USAGE="USAGE: $0 <at least 1 argument>"
+
+if [[ "$#" -lt 1 ]]; then
+   echo $USAGE
+   echo "Default Options"
+   echo "Nodes = 1"
+   echo "NCPUs = 1"
+   echo "Partition = lts"
+   echo "Time = 3 days"
+   exit
+fi
+
+srun $@ --pty /bin/bash
+
+
+

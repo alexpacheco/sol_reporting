@@ -1,0 +1,206 @@
+#!/bin/bash
+
+if [[ $# -eq 1 ]]; then
+  day1=$1
+  day2=$1
+elif [[ $# -ge 2 ]]; then
+  day1=$1
+  day2=$2
+else
+  echo "Need at least one argument"
+  exit
+fi
+
+
+start=()
+
+begin=$(echo `date +%s` `date +%s -d "$day1"` | awk '{print int(($1-$2)/86400)}' )
+end=$(echo `date +%s` `date +%s -d "$day2"` | awk '{print int(($1-$2)/86400)}' )
+for numofdays in $(seq $begin -1 $end)
+do
+  first=$(date -d "$numofdays day ago" +%Y-%m-%d )
+  start=( ${start[@]} ${first} )
+done
+
+
+let numdays=${#start[@]}-1
+
+if [[ "$1" == "2019-10-01" ]] ; then
+echo "Type;Name;Department;PI;PIDept;Status;Day;SerialJ;Serial;SingleJ;Single;MultiJ;Multi;TotalJ;Total"
+fi
+
+state="COMPLETED,CANCELLED,FAILED,TIMEOUT"
+
+#for alloc in $(sshare | tail -n +3 | awk '{print $1}' | sed -e 's/_1718//g' | sort | egrep -iv 'description|root' | uniq)
+# Loop over months
+
+for i in $(seq 0 $numdays )
+do
+    for alloc in $(sshare | tail -n +3 | awk '{print $1}' | egrep -v 'description|root' | sort | uniq)
+    do 
+        pi_usage=$(sacct -a -A ${alloc} \
+  	    -S ${start[$i]}-00:00:00 -E ${start[$i]}-23:59:59 \
+            --state=$state \
+  	    -X -n -o CPUTimeRAW | \
+            awk '{ s+=$1 } END {print s} ')
+  	    #-S ${start[$i]}-00:00:01 -E ${start[$i+1]}-00:00:00 \
+        if [[ "$pi_usage" -le 1 ]]
+        then
+            continue
+        fi
+        piid=$(echo $alloc | sed -e 's/_1920//g' -e 's/_1819//g')
+	case ${alloc} in
+	    lts|hpc2017|hpc2018)
+		if [[ "${alloc}" == "lts" ]]
+		then
+		    pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "ou:" | awk -F: '{printf "%s;",$2}')		
+		    pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		else
+		    pi=" HPC Workshop;"
+                    pistatus=" HPC Workshop; "
+		fi
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		;;
+	    amr511|amr511_1718|amr511_1819)
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=gil213 | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gil213 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gil213 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    jdg4|jdg4_1718|jdg4_1819)
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=div206 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    che395|che395_1819)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+		pidept=" Chemical Engineering; "
+		pistatus=" Course; "
+		;;
+	    cse375|cse498)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | awk '{printf "%s;",$1}')
+		pidept=" Computer Sci and Engineering; "
+		pistatus=" Course;"
+		;;
+	    csereu_1718|csereu_1819)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+		pidept=" Computer Sci and Engineering; "
+		pistatus=" REU;"
+		;;
+	    bioe495)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | awk '{printf "%s;",$1}')
+		pidept=" BioEngineering; "
+		pistatus=" Course;"
+                ;;
+	    bioe316_1920)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1920//g' | awk '{printf "%s;",$1}')
+		pidept=" BioEngineering; "
+		pistatus=" Course;"
+                ;;
+	    bio295_1819)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+		pidept=" Biological Sciences; "
+		pistatus=" Course;"
+                ;;
+	    ese460_1819)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+		pidept=" Energy Systems Engineering; "
+		pistatus=" Course;"
+                ;;
+	    tlt462_1819)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+		pidept=" Teaching Learning Technology; "
+		pistatus=" Course;"
+                ;;
+	    mem-vdf|mem-vdf_1718|mem-vdf_1819)
+		pi=" Webb-Oztekin Joint Project;"
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=ebw210 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=ebw210 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    ise|ise_1718|ise_1819)
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+                pi=$pidept
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+                ;;
+	    chem|chem_1718|chem_1819|dav512|dav512_1718|dav512_1819rof2|rof2_1718|rof2_1819)
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gf03 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+                pi=$pidept
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gf03 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    chz212|chz212_1718|chz212_1819)
+		pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=chz212 | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=rb0f | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=chz212 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    *)
+		pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	esac
+	userlist=$(sshare -a -A ${alloc} -n | awk '{if (NF > 6){print $2} }')
+	
+	for user in ${userlist}
+	do 
+            user_usage=$(sacct -u $user -A ${alloc} \
+		-S ${start[$i]}-00:00:00 -E ${start[$i]}-23:59:59 \
+                --state=$state \
+                -X -n -o CPUTimeRAW | awk '{ s+=$1 } END {print s} ')
+		#-S ${start[$i]}-00:00:01 -E ${start[$i+1]}-00:00:00 \
+            if [[ "$user_usage" -le 1 ]]
+            then
+              continue
+            fi
+	    name=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=$user | grep "cn:" | awk -F: '{printf "%s;",$2}')
+	    if [[ -z $name ]] ; then name="$user;" ; fi
+	    dept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$user | grep "ou:" | awk -F : '{printf "%s;",$2}')
+	    if [[ -z "$dept" ]]; then dept=${pidept} ; fi
+            status=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$user | grep "Status:" | awk -F : '{printf "%s;",$2}')
+	    if [[ -z "$status" ]]; then status=" Guest;" ; fi
+		#-S ${start[$i]}-00:00:01 -E ${start[$i+1]}-00:00:00 \
+	    usage=($(sacct -u $user -A ${alloc} \
+		-S ${start[$i]}-00:00:00 -E ${start[$i]}-23:59:59 \
+                --state=$state \
+		-X -n -o CPUTimeRAW,NNODES,NCPUS | \
+                awk '{ \
+                        if ( $2 == 1 && $3 == 1){ \
+                           is+=1;serial+=$1 \
+                        }else{ \
+                           if ( $2 == 1 && $3 > 1){ \
+                              ic+=1;single+=$1 \
+                           }else{ \
+                              im+=1;multi+=$1 \
+                           } \
+                        } \
+                      }END{ \
+                        printf " %d; %f; %d; %f; %d; %f; %d; %f", is,serial/60/60,ic,single/60/60,im,multi/60/60,is+ic+im,(serial+single+multi)/60/60}'))
+        #    timereq=$(sacct -u $user -A ${alloc} \
+        #             --state=$state \
+        #             -S ${start[$i]}-00:00:00 -E ${start[$i]}-23:59:59 \
+        #             -X -o TimeLimit | sed 's/-/:/g' | \
+        #             awk -F: '{if (NF>3){s+=$1*24+$2+$3/60+$4/(60*60)}else{s+=$1+$2/60+$3/(60*60)}}END{print s}')
+	    echo "User;" $name $dept $pi $pidept $status "${start[$i]};" | awk '{printf "%s ",$0}'
+	    echo "${usage[@]}" | awk '{printf "%s \n",$0}'
+	done 
+#	echo "PI;" $pi $pidept $pi $pidept $pistatus "${start[$i]};" | awk '{printf "%s ",$0}'
+#	    #-S ${start[$i]}-00:00:01 -E ${start[$i+1]}-00:00:00 \
+#	piusage=($(sacct -a -A ${alloc} \
+#	    -S ${start[$i]}-00:00:00 -E ${start[$i]}-23:59:59 \
+#	    -X -n -o CPUTimeRAW,NNODES,NCPUS | \
+#            awk '{ \
+#                    if ( $2 == 1 && $3 == 1){ \
+#                       is+=1;serial+=$1 \
+#                    }else{ \
+#                       if ( $2 == 1 && $3 > 1){ \
+#                          ic+=1;single+=$1 \
+#                       }else{ \
+#                          im+=1;multi+=$1 \
+#                       } \
+#                    } \
+#                  }END{ \
+#                    printf " %d; %f; %d; %f; %d; %f; %d; %f", is,serial/60/60,ic,single/60/60,im,multi/60/60,is+ic+im,(serial+single+multi)/60/60}'))
+#	echo "${piusage[@]}" | awk '{printf "%s \n",$0}'
+    done
+done
+
+
+

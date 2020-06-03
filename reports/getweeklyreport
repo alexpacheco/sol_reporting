@@ -1,0 +1,23 @@
+#!/bin/bash
+
+export PATH=/usr/local/bin:$PATH
+
+cd /tmp
+/home/alp514/bin/daily_alloc.sh $1 $2 $3 > tmp.$$
+
+start=$(date -d "$2 day ago" +%Y-%m-%d-00:00:00)
+end=$(date -d "$3 day ago" +%Y-%m-%d-23:59:59)
+
+if [[ "$1" == "che395" ]]; then
+  pi="srr516@lehigh.edu jem309@lehigh.edu"
+elif [[ "$1" == "cse498" ]]; then
+  pi="mcc7@lehigh.edu"
+elif [[ "$1" == "mem-vdf" ]]; then
+  pi="ebw210@lehigh.edu alo2@lehigh.edu"
+elif [[ "$1" == "hpc2107" ]]; then
+  pi=
+else
+  pi=$(echo $pi"@lehigh.edu")
+fi
+#cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Weekly Sol usage for $1: $start - $end")" alex.pacheco@lehigh.edu #$pi
+cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Weekly Sol usage for $1")" alex.pacheco@lehigh.edu $pi

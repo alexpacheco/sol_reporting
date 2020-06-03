@@ -1,0 +1,1069 @@
+---
+title: "AY 19-20 Report"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    source: embed
+    smart: false
+    theme: lumen
+    navbar: 
+      - { title: "Usage Summary", href: "https://webapps.lehigh.edu/hpc/usage/dashboard.html"}
+      - { title: "Daily Monitoring", href: "https://webapps.lehigh.edu/hpc/monitor"}
+      - { title: "AY 18-19 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1819.html"} 
+      - { title: "AY 17-18 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1718.html"} 
+      - { title: "AY 16-17 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1617.html"} 
+---
+
+```{r setup, include=F}
+library(flexdashboard)
+library(tidyverse)
+library(lubridate)
+library(reshape2)
+library(stringr)
+library(plotly)
+library(knitr)
+library(DT)
+options(DT.options = list(dom = 'ltip', pageLength = 25, lengthMenu = c(10, 25, 50, 75, 100), autoWidth = TRUE) )
+library(kableExtra)
+options(knitr.table.format = "html")
+source("./ayfuncs.R")
+
+```
+
+Summary {data-navmenu="Annual Report"}
+==============================
+
+```{r annual-setup,echo=F}
+if ( month(today()) == 10 ){
+  jobsthisay <- read_delim('jobs-0.csv',delim=";")
+} else { 
+  jobsthisay <- read_delim('jobsalloc.csv.gz',delim=";") 
+  jobsthismonth <- read_delim('jobs-0.csv',delim=";") 
+
+  day_of_month <- mday(today())
+  if ( day_of_month > 1 ){
+    jobsthisay <- rbind(jobsthisay,jobsthismonth)
+  }
+}
+
+dayspermonth = c(31,30,31,31,29,31,30,31,30,31,31,30)
+lts <- rep(20,12)*9*dayspermonth*24
+im1080 <- rep(25,12)*24*dayspermonth*24
+eng <- rep(8,12)*24*dayspermonth*24
+engc <- rep(14,12)*24*dayspermonth*24
+himem <- rep(1,12)*16*dayspermonth*24
+enge <- c(10,10,10,10,10,10,10,10,8,8,8,8)*36*c(31,30,31,31,29,31,30,31,30,31,31,30)*24
+engi <- rep(2,12)*36*dayspermonth*24
+im2080 <- rep(12,12)*36*dayspermonth*24
+chem <- rep(6,12)*36*c(0,0,0,0,0,0,0,2,30,31,31,30)
+ay1920su <- lts+im1080+eng+engc+himem+enge+engi+im2080+chem
+if ( day_of_month > 1 ){
+  currmonth <- length(seq(from=as.Date("2019-10-01"), to=Sys.Date(), by='month'))
+} else {
+  currmonth <- length(seq(from=as.Date("2019-10-01"), to=Sys.Date()-1, by='month'))
+}
+# read power and energy usage
+read_csv('../dashboard/monthlypower1920.csv') %>% 
+  mutate(Year=year(Month),Month=month(Month,label=TRUE)) %>%
+  select(c(Year,Month,Partition,Host,Power,Energy)) -> monthlypower1920
+read_csv('../dashboard/dailypower1920.csv') %>%
+  mutate(Year=year(Date),Month=month(Date,label=TRUE),Day=day(Date)) %>%
+  select(c(Date,Year,Month,Day,Partition,Host,Power,Energy)) -> dailypower1920
+
+jobsthisay %>% 
+  mutate(Year=year(End),Month=month(End,label=TRUE)) %>% 
+  group_by(Year,Month) %>% 
+  select(c(Month,Start,Submit,End,NCPUS))  %>% 
+  summarize( 
+    Total_SU=round(sum(as.numeric(difftime(End,Start,units="hours"))*NCPUS),2), 
+    Total_Jobs=n() 
+  ) -> percent
+```
+
+Row
+-------------------------------------
+
+
+```{r annualsummary}
+jobsthisay %>% summary %>% 
+   mutate(Partition="Total",Used=round(SU/sum(ay1920su[1:currmonth])*100,2)) %>%
+   select(c(Partition,SU,'% Consumed'=Used,Jobs,Wait,Run)) -> Total_SU_Jobs
+jobsthisay %>% serial_filter %>% summary %>% 
+  mutate(Partition="Total",
+         SUper = round(SU/Total_SU_Jobs$SU*100,2), 
+         Jobsper = round(Jobs/Total_SU_Jobs$Jobs*100,2)) %>%
+  select(c(Partition,SU,Jobs,'% SU'=SUper,'% Jobs'=Jobsper,Wait,Run)) -> serialtotal
+jobsthisay %>% smp_filter %>% summary %>% 
+  mutate(Partition="Total",
+         SUper = round(SU/Total_SU_Jobs$SU*100,2), 
+         Jobsper = round(Jobs/Total_SU_Jobs$Jobs*100,2)) %>%
+  select(c(Partition,SU,Jobs,'% SU'=SUper,'% Jobs'=Jobsper,Wait,Run)) -> smptotal
+jobsthisay %>% dmp_filter %>% summary %>% 
+  mutate(Partition="Total",
+         SUper = round(SU/Total_SU_Jobs$SU*100,2), 
+         Jobsper = round(Jobs/Total_SU_Jobs$Jobs*100,2)) %>%
+  select(c(Partition,SU,Jobs,'% SU'=SUper,'% Jobs'=Jobsper,Wait,Run)) -> dmptotal
+```
+
+### Total
+
+```{r annualsummary-total}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% summary %>% partfilter('lts',lts) -> ltstotal
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% summary %>% partfilter('im1080',im1080) -> im1080total
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% summary %>% partfilter('im2080',im2080) -> im2080total
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% summary %>% partfilter('eng',eng) -> engtotal
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% summary %>% partfilter('engc',engc) -> engctotal
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% summary %>% partfilter('himem',himem) -> himemtotal
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% summary %>% partfilter('enge',enge) -> engetotal
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% summary %>% partfilter('engi',engi) -> engitotal
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% summary %>% partfilter('chem',chem) -> chemtotal
+rbind(Total_SU_Jobs,ltstotal,im1080total,engtotal,engctotal,himemtotal,engetotal,engitotal,im2080total,chemtotal) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r annualsummary-serial}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_serial
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_serial
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_serial
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% 
+  serial_filter %>% summary %>% parttotalfilter('eng',engtotal) -> eng_serial
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('engc',engctotal) -> engc_serial
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('himem',himemtotal) -> himem_serial
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_serial
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_serial
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_serial
+rbind(serialtotal,lts_serial,im1080_serial,eng_serial,engc_serial,himem_serial,enge_serial,engi_serial,im2080_serial,chem_serial) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r annualsummary-smp}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_smp
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_smp
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_smp
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% 
+  smp_filter %>% summary %>% parttotalfilter('eng',engtotal) -> eng_smp
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('engc',engctotal) -> engc_smp
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('himem',himemtotal) -> himem_smp
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_smp
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_smp
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_smp
+rbind(smptotal,lts_smp,im1080_smp,eng_smp,engc_smp,himem_smp,enge_smp,engi_smp,im2080_smp,chem_smp) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r annualsummary-dmp}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_dmp
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_dmp
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_dmp
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% 
+  dmp_filter %>% summary %>% parttotalfilter('eng',engtotal) -> eng_dmp
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('engc',engctotal) -> engc_dmp
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('himem',himemtotal) -> himem_dmp
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_dmp
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_dmp
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_dmp
+rbind(dmptotal,lts_dmp,im1080_dmp,eng_dmp,engc_dmp,himem_dmp,enge_dmp,engi_dmp,im2080_dmp,chem_dmp) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+
+Row
+--------------------------------------------------
+
+### CPU vs GPU
+
+```{r annualcpuvgpu-summary,echo=F}
+jobsthisay %>% summary -> Timing_Total
+jobsthisay %>% filter(!str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="cpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> cpu
+jobsthisay %>% filter(str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="gpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> gpu
+jobsthisay %>% summary %>% 
+   mutate(Type="Total","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> total
+full_join(full_join(cpu,gpu),total) %>% my_table
+```
+
+### Serial Jobs
+
+```{r annualcpuvgpu-serial,echo=F}
+jobsthisay %>% serial_filter %>% filter(!str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="cpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> cpu
+jobsthisay %>% serial_filter %>% filter(str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="gpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> gpu
+jobsthisay %>% serial_filter %>% summary %>% 
+   mutate(Type="Total","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> total
+full_join(full_join(cpu,gpu),total) %>% my_table
+```
+
+### SMP Jobs
+
+```{r annualcpuvgpu-smp,echo=F}
+jobsthisay %>% smp_filter %>% filter(!str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="cpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> cpu
+jobsthisay %>% smp_filter %>% filter(str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="gpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> gpu
+jobsthisay %>% smp_filter %>% summary %>% 
+   mutate(Type="Total","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> total
+full_join(full_join(cpu,gpu),total) %>% my_table
+```
+
+### DMP Jobs
+
+```{r annualcpuvgpu-dmp,echo=F}
+jobsthisay %>% dmp_filter %>% filter(!str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="cpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> cpu
+jobsthisay %>% dmp_filter %>% filter(str_detect(Partition,"gpu")) %>% summary %>% 
+   mutate(Type="gpu","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> gpu
+jobsthisay %>% dmp_filter %>% summary %>% 
+   mutate(Type="Total","% SU"=round(SU/Timing_Total$SU*100,2),"% Jobs"=round(Jobs/Timing_Total$Jobs*100,2)) %>% 
+   select(c("Type","SU","% SU","Jobs","% Jobs","Wait","Run")) -> total
+full_join(full_join(cpu,gpu),total) %>% my_table
+```
+
+Partition {data-navmenu="Annual Report"}
+==============================
+
+
+Row
+---------------------------------
+
+### Summary
+
+```{r annualpart-summary,echo=F}
+jobsthisay %>% group_by(Partition) %>% summary -> Timing_Part
+jobsthisay %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) %>% mutate('% SU' = round(SU/Timing_Total$SU*100,2)) %>% select(c('Partition','SU','% SU','Jobs', 'Wait', 'Run')) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+
+### Serial Jobs
+
+```{r annualpart-serial,echo=F}
+jobsthisay %>% serial_filter %>% group_by(Partition) %>% summary  -> Timing_Part
+jobsthisay %>% serial_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### SMP Jobs
+
+```{r annualpart-smp,echo=F}
+jobsthisay %>% smp_filter %>% group_by(Partition) %>% summary  -> Timing_Part
+jobsthisay %>% smp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### DMP Jobs
+
+```{r annualpart-dmp,echo=F}
+jobsthisay %>% dmp_filter %>% group_by(Partition) %>% summary  -> Timing_Part
+jobsthisay %>% dmp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+
+
+
+
+Allocation {data-navmenu="Annual Report"}
+==============================
+
+Row
+---------------------------------
+
+### Summary
+
+```{r annualalloc-summary,echo=F}
+jobsthisay %>% group_by(Account) %>% summary  -> Timing_Part
+jobsthisay %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### CPU vs GPU
+
+```{r annualalloc-type,echo=F}
+jobsthisay %>% cpu_gpu_total(Account) -> total
+jobsthisay %>% cpu_total(Account) -> cpu
+jobsthisay %>% gpu_total(Account) -> gpu
+full_join(total,full_join(cpu,gpu)) -> usage1920
+usage1920[is.na(usage1920)] <- 0
+usage1920 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
+```
+
+
+### Serial Jobs
+
+```{r annualalloc-serial,echo=F}
+jobsthisay %>% serial_filter %>% group_by(Account) %>% summary  -> Timing_Part
+jobsthisay %>% serial_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table 
+```
+
+### SMP Jobs
+
+```{r annualalloc-smp,echo=F}
+jobsthisay %>% smp_filter %>% group_by(Account) %>% summary  -> Timing_Part
+jobsthisay %>% smp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### DMP Jobs
+
+```{r annualalloc-dmp,echo=F}
+jobsthisay %>% dmp_filter %>% group_by(Account) %>% summary  -> Timing_Part
+jobsthisay %>% dmp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table 
+```
+
+User {data-navmenu="Annual Report"}
+==============================
+
+Row
+---------------------------------
+
+### Summary
+
+```{r annualuser-summary}
+jobsthisay %>% group_by(User) %>% summary  -> Timing_Part
+jobsthisay %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### CPU vs GPU
+
+```{r annualuser-type,echo=F}
+jobsthisay %>% cpu_gpu_total(User) -> total
+jobsthisay %>% cpu_total(User) -> cpu
+jobsthisay %>% gpu_total(User) -> gpu
+full_join(total,full_join(cpu,gpu)) -> usage1920
+usage1920[is.na(usage1920)] <- 0
+usage1920 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
+```
+
+### Serial
+
+```{r annualuser-serial}
+jobsthisay %>% serial_filter %>% group_by(User) %>% summary  -> Timing_Part
+jobsthisay %>% serial_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table 
+```
+
+### SMP
+
+```{r annualuser-smp}
+jobsthisay %>% smp_filter %>% group_by(User) %>% summary  -> Timing_Part
+jobsthisay %>% smp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+### DMP
+
+```{r annualuser-dmp}
+jobsthisay %>% dmp_filter %>% group_by(User) %>% summary  -> Timing_Part
+jobsthisay %>% dmp_filter %>% summary -> Timing_Total
+
+full_join(Timing_Part,Timing_Total) -> Timing
+Timing[is.na(Timing)] <- "Total"
+
+Timing %>% my_table
+```
+
+
+Summary {data-navmenu="Monthly Reports"}
+=========================================
+
+Row 
+------------------------------------
+
+### Summary
+
+```{r monthly-setup,echo=F}
+jobsthisay %>% monthly_summary %>% partpercent(ay1920su[1:currmonth]) -> total
+jobsthisay %>% serial_filter %>% monthly_summary -> serial
+jobsthisay %>% smp_filter %>% monthly_summary -> smp
+jobsthisay %>% dmp_filter %>% monthly_summary -> dmp
+
+getpercent(serial,percent) -> serialpercent
+getpercent(smp,percent) -> smppercent
+getpercent(dmp,percent) -> dmppercent
+
+#cbind(total,serialpercent,smppercent,dmppercent)  %>% select(-c(Year1,Month1,Year2,Month2,Year3,Month3)) -> jobtotal
+#colnames(jobtotal) <- c("Year","Month","SU","Jobs","Wait","Run","SU","Jobs","% SU","%Jobs","Wait","Run","SU","Jobs","% SU","%Jobs","Wait","Run","SU","Jobs","% SU","%Jobs","Wait","Run")
+#jobtotal %>% 
+#  kable() %>%
+#  kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive")) %>%
+#  add_header_above(c(" " = 2, "Total" = 4, "Serial" = 6, "SMP" = 6, "DMP" = 6))
+```
+
+
+```{r monthly-summary}
+total %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### CPU vs GPU
+
+```{r monthly-summarytype, echo=F}
+jobsthisay %>% cpu_gpu_monthly -> total
+jobsthisay %>% cpu_monthly -> cpu
+jobsthisay %>% gpu_monthly -> gpu
+full_join(total,full_join(cpu,gpu)) %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) -> usage1920
+usage1920 %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthly-serial}
+serialpercent %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthly-smp}
+smppercent %>% 
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthly-dmp}
+dmppercent %>% 
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Partition {data-navmenu="Monthly Reports"}
+===============================================
+
+Row 
+------------------------------------------
+
+### lts
+
+```{r monthlypart-lts}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% monthly_summary %>% partpercent(lts[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-lts-serial}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% serial_filter %>% monthly_summary %>% 
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthly-part-lts-smp}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-lts-dmp}
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### im1080
+
+```{r monthlypart-im1080}
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% monthly_summary %>% partpercent(im1080[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-im1080-serial}
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-im1080-smp}
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-im1080-dmp}
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### eng
+
+```{r monthlypart-eng}
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% monthly_summary %>% partpercent(eng[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-eng-serial}
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-eng-smp}
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-eng-dmp}
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### engc
+
+```{r monthlypart-engc}
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% monthly_summary %>% partpercent(engc[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-engc-serial}
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-engc-smp}
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-engc-dmp}
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### himem
+
+```{r monthlypart-himem}
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% monthly_summary %>% partpercent(himem[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-himem-serial}
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-himem-smp}
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-himem-dmp}
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### enge
+
+```{r monthlypart-enge}
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% monthly_summary %>% partpercent(enge[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-enge-serial}
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-enge-smp}
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-enge-dmp}
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### engi
+
+```{r monthlypart-engi}
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% monthly_summary %>% partpercent(engi[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-engi-serial}
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-engi-smp}
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-engi-dmp}
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+
+
+Row 
+------------------------------------------
+
+### im2080
+
+```{r monthlypart-im2080}
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% monthly_summary %>% partpercent(im2080[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-im2080-serial}
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-im2080-smp}
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-im2080-dmp}
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### chem
+
+```{r monthlypart-chem}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% monthly_summary %>% partpercent(chem[8:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-chem-serial}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-chem-smp}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-chem-dmp}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+
+
+
+
+
+Allocation {data-navmenu="Monthly Reports"}
+==========================================
+
+Row
+---------------------------------
+
+### List of PIs
+
+```{r monthlyalloc-list,echo=F}
+jobsthisay$Account %>% unique %>% sort %>% matrix(ncol = 1) %>% 
+  kable() %>% kable_styling(bootstrap_options = "striped", full_width = F)
+```
+
+### Summary
+
+```{r monthlyalloc-summary,echo=F}
+jobsthisay %>% 
+  mutate(Year=year(End),Month=month(End,label=TRUE)) %>%
+  group_by(Year,Month,Account) %>%
+  summary %>%
+  my_longtable
+```
+
+### Partition
+
+```{r monthlyalloc-part,echo=F}
+jobsthisay %>% 
+  mutate(Year=year(End),Month=month(End,label=TRUE)) %>%
+  group_by(Year,Month,Account,Partition) %>%
+  summary %>%
+  my_longtable
+```
+
+User {data-navmenu="Monthly Reports"}
+==========================================
+
+Row
+---------------------------------
+
+### List of Users
+
+```{r monthlyuser-list,echo=F}
+jobsthisay$User %>% unique %>% sort %>% matrix(ncol = 1) %>% 
+  kable() %>% kable_styling(bootstrap_options = "striped")
+```
+
+### Summary
+
+```{r monthlyuser-summary,echo=F}
+jobsthisay %>% 
+  mutate(Year=year(End),Month=month(End,label=TRUE)) %>%
+  group_by(Year,Month,User,Account) %>%
+  summary %>%
+  my_longtable
+```
+
+### Partition
+
+```{r monthlyuser-part,echo=F}
+jobsthisay %>% 
+  mutate(Year=year(End),Month=month(End,label=TRUE)) %>%
+  group_by(Year,Month,User,Account,Partition) %>%
+  summary %>%
+  my_longtable
+```
+
+Energy Consumption {data-navmenu="Monthly Reports"} 
+=====================================================
+
+Row
+-------------------------------------------
+
+### Total 
+
+```{r monthlyenergy-total}
+monthlypower1920 %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### lts
+
+```{r monthlyenergy-lts}
+monthlypower1920 %>% filter(str_detect(Partition,'lts')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage(kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+
+### im1080
+
+```{r monthlyenergy-im1080}
+monthlypower1920 %>% filter(str_detect(Partition,'im1080')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+
+### eng
+
+```{r monthyenergy-eng}
+monthlypower1920 %>% filter(Partition=="eng" | Partition=="eng-gpu") %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+Row
+---------------------------------------------
+
+### engc
+
+```{r monthlyenergy-engc}
+monthlypower1920 %>% filter(str_detect(Partition,'engc')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+
+```{r monthlyenergy-himem}
+### himem
+# himem node can only measure volts, no amp or watts skipping this node
+#monthlypower1920 %>% filter(str_detect(Partition,'himem')) %>%
+#  group_by(Year,Month) %>%
+#  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+#  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### enge
+
+```{r monthlyenergy-enge}
+monthlypower1920 %>% filter(str_detect(Partition,'enge')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### engi
+
+```{r monthlyenergy-engi}
+monthlypower1920 %>% filter(str_detect(Partition,'engi')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### im2080
+
+```{r monthlyenergy-im2080}
+monthlypower1920 %>% filter(str_detect(Partition,'im2080')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### chem
+
+```{r monthlyenergy-chem}
+monthlypower1920 %>% filter(str_detect(Partition,'chem')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+
+Row
+---------------------------------------------
+
+### Energy Consumption per Server
+
+```{r monthylenergy-server}
+monthlypower1920 %>%
+  group_by(Year,Month,Partition,Host) %>%
+  summarize('Average Power Usage (W)'=round(sum(Power),2),'Energy Consumption (kWh)'=round(sum(Energy),2)) %>%
+  my_longtable  
+```
+
+
+
+Jobs Completed 
+==========================================
+
+Row {.tabset data-height=1500}
+----------------------------------
+
+### October
+
+```{r october,echo=F}
+monthly_usage( jobsthisay, as.Date("2019-10-01"), as.Date("2019-11-01") )
+```
+
+### November
+
+```{r november,echo=F}
+monthly_usage( jobsthisay, as.Date("2019-11-01"), as.Date("2019-12-01") )
+```
+
+### December
+
+```{r december,echo=F}
+monthly_usage( jobsthisay, as.Date("2019-12-01"), as.Date("2020-01-01") )
+```
+
+### January
+
+```{r january,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-01-01"), as.Date("2020-02-01") )
+```
+
+### February
+
+```{r february,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-02-01"), as.Date("2020-03-01") )
+```
+
+### March
+
+```{r march,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-03-01"), as.Date("2020-04-01") )
+```
+
+### April
+
+```{r april,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-04-01"), as.Date("2020-05-01") )
+```
+
+### May
+
+```{r may,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-05-01"), as.Date("2020-06-01") )
+```
+
+### June
+
+```{r june,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-06-01"), as.Date("2020-07-01") )
+```
+
+### July
+
+```{r july,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-07-01"), as.Date("2020-08-01") )
+```
+
+### August
+
+```{r august,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-08-01"), as.Date("2020-09-01") )
+```
+
+### September
+
+```{r september,echo=F}
+monthly_usage( jobsthisay, as.Date("2020-09-01"), as.Date("2020-10-01") )
+```
+

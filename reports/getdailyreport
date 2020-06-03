@@ -1,0 +1,10 @@
+#!/bin/bash
+
+export PATH=/usr/local/bin:$PATH
+
+cd /tmp
+#/home/alp514/bin/daily.sh 1 > tmp.$$
+/share/Apps/usr/bin/daily.sh 1 > tmp.$$
+
+date=$(date -d "yesterday" +%Y-%m-%d)
+cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Daily Sol Usage $date")" alex.pacheco@lehigh.edu sma310@lehigh.edu

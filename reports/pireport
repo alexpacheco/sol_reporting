@@ -1,0 +1,75 @@
+#!/bin/bash
+
+# Execute getopt on the arguments passed to this program, identified by the special character $
+
+PARSED_OPTIONS=$(getopt -n "$0" -o ham:p:u: --long "help,all,months=:,pi=:,user=:"  -- "$@")
+
+# A little magic, necessary when using getopt.
+eval set -- "$PARSED_OPTIONS"
+
+# Now goes through all the options with a case and using shift to analyse 1 argument at a time.
+#$1 identifies the first argument, and when we use shift we discard the first argument, so $2 becomes $1 and goes again through the case.
+while true;
+do
+  case "$1" in
+    -p | --pi=*)
+      shift
+      if [ -n "$1" ]; then
+        invest=$1
+	if [[ "$invest" == "all" ]] ; then
+          invest=""
+        fi
+       else
+        invest=""
+      fi
+      shift
+      ;;
+    --)
+#      echo "Monthly Usage Report for the last $last months"
+      shift
+      break
+      ;;
+  esac
+done
+
+ayold="_1819"
+ay="_1920"
+aystart="2019-10-01-00:00:00"
+
+echo "      PI              Usage             Limit      %Used"
+echo "--------------------------------------------------------"
+
+
+if [[ -z $invest ]]; then
+    accounts=$(sshare -o Account -n | awk '{print $1}' | egrep -i '1920|lts' | sed -e 's/_1920//g' -e 's/_s1920//g' | uniq )
+    for pi in $accounts
+    do
+	usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+	alloclimit=$(sshare -o Account,RawUsage,GrpTRESMins -A ${pi}${ay} -n | egrep -v "^\s+" | awk -F= '{print $2/60}')
+    
+	if [[ "$alloclimit" -gt "0" ]]
+	then
+	    usepercent=$(echo $usage $alloclimit | awk '{print $1/$2*100}')
+	else
+	    usepercent=0
+	fi
+	echo $pi $usage $alloclimit $usepercent | awk '{printf " %8s\t%14.5f\t%14.5f\t%8.2f\n",$1,$2,$3,$4}'
+    done
+else
+    pi=$invest
+    usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+    alloclimit=$(sshare -o Account,RawUsage,GrpTRESMins -A ${pi}${ay} -n | egrep -v "^\s+" | awk -F= '{print $2/60}')
+    
+    if [[ "$alloclimit" -gt "0" ]]
+    then
+	usepercent=$(echo $usage $alloclimit | awk '{print $1/$2*100}')
+    else
+	usepercent=0
+    fi
+    echo $pi $usage $alloclimit $usepercent | awk '{printf " %8s\t%14.5f\t%14.5f\t%8.2f\n",$1,$2,$3,$4}'
+    
+fi
+
+
+
+

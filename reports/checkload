@@ -1,0 +1,4 @@
+#!/bin/bash
+
+format="%.10N %.7D %.9P %.11T %.4c %.8z %.8m %.10O %.12l"
+sinfo $@ -N --format="$format"
