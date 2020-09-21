@@ -1,0 +1,97 @@
+---
+title: "Sol Usage"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+    smart: false
+---
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('.navbar').remove();
+  $('body').css('padding-top', '0px');
+});
+</script>
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(lubridate)
+
+# read daily usage reports
+daily1617 <- read_delim('soldaily1617.csv', delim=";")
+daily1718 <- read_delim('soldaily1718.csv', delim=";")
+daily1819 <- read_delim('soldaily1819.csv', delim=";")
+daily1920 <- read_delim('soldaily1920.csv', delim=";")
+
+daily <- rbind(daily1617,daily1718,daily1819,daily1920)
+
+# https://stackoverflow.com/questions/28159936/format-numbers-with-million-m-and-billion-b-suffixes
+compress <- function(tx) {
+  tx <- as.numeric(gsub("\\,", "", tx))
+  int <- c(1e-2, 1, 1e3, 1e6, 1e9, 1e12)
+  div <- findInterval(tx, int)
+  paste(round( tx/int[div], 2), c(1e-2,"", "K","M","B","T")[div] )
+}
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+```{r fortnight_setup}
+users <- daily %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+pis <- daily %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+pidept <- daily %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+dept <- daily %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+forttotal <- sum(pis$Total)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r fortnight_users}
+valueBox(n_distinct(users$Name), icon = "fa-users", color = "#502D0E" )
+```
+
+### Major/Department
+
+```{r fortnight_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university", color = "#502D0E" )
+```
+
+### PI's
+
+```{r fortnight_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md", color = "#502D0E" )
+```
+
+### Departments
+
+```{r fortnight_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building", color = "#502D0E" )
+```
+
+### CPU hours 
+
+```{r fornight_susconsumed}
+valueBox(compress(forttotal), icon = "fa-desktop", color = "#502D0E" )
+```
+
+### Jobs 
+
+```{r fornight_jobsrun}
+valueBox(compress(fortjobs), icon = "fa-desktop", color = "#502D0E" )
+```
+
+

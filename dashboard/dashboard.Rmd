@@ -23,7 +23,8 @@ library(DT)
 library(plotly)
 
 # read usage by partition and clean data
-data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(23)), fill = TRUE)
+# New partition  -> add 2 to seq_len
+data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(25)), fill = TRUE)
 data[is.na(data)] <- 0
 
 # read daily usage reports
@@ -128,7 +129,7 @@ monthly1819 <- monthly %>% ay1819filter
 ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,2188*30)*24
 # usage by month for AY 2019-20
 monthly1920 <- monthly %>% ay1920filter
-ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2332*31,2332*30)*24
+ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
 
 
 # Details of Sol nodes
@@ -168,6 +169,9 @@ im2080gpu <- 48
 chemnodes <- 4
 chemcores <- 36
 chemperf <- 1.6*avx512
+healthnodes <- 2
+healthcores <- 36
+healthperf <- 1.6*avx512
 superyear <- 24*365
 
 lts <- ltsnodes*ltscores*24
@@ -179,12 +183,13 @@ enge <- engenodes*engecores*24
 engi <- enginodes*engicores*24
 im2080 <- im2080nodes*im2080cores*24
 chem <- (engecnodes + chemnodes)*chemcores*24
-all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 +chem
+health <- healthnodes*healthcores*24
+all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health
 
-totalnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes
-totalcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes )*engecores
-totalmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes)  * 192
-totalperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf)/1000
+totalnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes
+totalcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores
+totalmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192
+totalperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf + healthnodes*healthcores*healthperf)/1000
 
 gpumem <- im1080gpu * 8 + im2080gpu * 11
 im1080cuda <- im1080gpu * 2560
@@ -267,8 +272,10 @@ gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
 ))
 ```
 
+
 Row {.tabset}
 --------------------------------------------------------------------
+
 
 ```{r topuser_setup}
 topuserstotal <- function(data, n = 10) {
@@ -299,6 +306,12 @@ fortnight %>% topuserstotal
 
 ```{r fortnight_userjobs}
 fortnight %>% topusersjobs
+```
+
+### AWS Comparison
+
+```{r aws_sol, fig.width=7, fig.height=5}
+knitr::include_graphics('/tmp/sol_value.jpg')
 ```
 
 
@@ -333,7 +346,7 @@ mydygraph(solmetric, "Total") %>% dyRangeSelector( dateWindow = dateWindow)
 * `r himemnodes` Compute Node: Two 2.6GHz 8-core Intel Xeon E5-2640 v3, 20M Cache, 512GB 2400MHz RAM
 * `r engenodes+enginodes+engecnodes+im2080nodes` Compute Nodes: Two 2.3GHz 18-core Intel Xeon Gold 6140, 24.75M Cache, 192GB 2666MHz RAM
    * ASUS Geforce RTX 2080 TI PCIE 11GB GDDR5 (4x on 12 nodes)
-* `r chemnodes` Compute Nodes: Two 2.6GHz 18-core Intel Xeon Gold 6240, 24.75M Cache, 192GB 2933MHz RAM
+* `r chemnodes+healthnodes` Compute Nodes: Two 2.6GHz 18-core Intel Xeon Gold 6240, 24.75M Cache, 192GB 2933MHz RAM
 * All Nodes contain
    * 1TB HDD
    * 100 Gb/s EDR Infiniband network interface
@@ -517,6 +530,22 @@ It provides `r (engecnodes+chemnodes)*engecores` compute cores with a total perf
 These nodes are a condo investment by  Lisa Fredin, Chemistry. The Skylake nodes were part of the enge partition between 2 Nov, 2018 and 31 May 2020.  
 
 
+Row {data-height=240}
+-------------------
+
+### health
+
+```{r fortnight_health}
+solmetric <- data$V24
+mydygraph(solmetric,"health") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r healthnodes` 36-core Cascade Lake nodes made available to the HPC user community on August 1, 2020.
+It provides `r healthnodes*healthcores` compute cores with a total performance of `r (healthnodes*healthcores*healthperf)/1000` TFLOPs, `r sprintf("%d",health)` SUs daily and `r sprintf("%d", (healthnodes*healthcores)*superyear)` SUs annually
+
+
 This Month
 =========================================================================
 
@@ -676,6 +705,12 @@ mydygraph(dataslice$V20, "im2080")
 mydygraph(dataslice$V22, "chem")
 ```
 
+### health
+
+```{r thismonth_health}
+mydygraph(dataslice$V24, "chem")
+```
+
 Row
 ----------------------------------------------------------------------
 
@@ -741,6 +776,7 @@ pq <- tribble(
       "engi",sum(dataslice$V18),
       "im2080",sum(dataslice$V20),
       "chem",sum(dataslice$V22),
+      "health",sum(dataslice$V24),
       "all-cpu",sum(dataslice$V12) )
 ```
 
@@ -991,6 +1027,12 @@ mydygraph(dataslice$V20, "im2080")
 mydygraph(dataslice$V22, "chem")
 ```
 
+### health
+
+```{r prevmonth_health}
+mydygraph(dataslice$V24, "chem")
+```
+
 
 Row
 ----------------------------------------------------------------------
@@ -1057,6 +1099,7 @@ pq <- tribble(
       "engi",sum(dataslice$V18),
       "im2080",sum(dataslice$V20),
       "chem",sum(dataslice$V22),
+      "health",sum(dataslice$V24),
       "all-cpu",sum(dataslice$V12) )
 ```
 

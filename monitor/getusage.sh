@@ -10,7 +10,7 @@ squeuefmt="%.10i;%.10P;%.20j;%.8u;%.15a;%.10T;%.10M;%.20S;%.20V;%.12l;%.4C;%.4D;
 
 
 squeue --format="$squeuefmt" --states=PENDING,RUNNING | egrep -v 'vdi|singularity' > queue.csv
-sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT" -S $(date -d "today" +%Y-%m-%d-00:00:00) -p --delimiter=";" \
+sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT" -S $(date -d "today" +%Y-%m-%d-00:00:00) -E $(date -d "now" +%Y-%m-%d-%H:%M:%S) -p --delimiter=";" \
     -X -o JobID%7,JobName%20,Partition%20,User%8,Account%20,NCPUS%4,NNodes%2,Nodelist%20,Elapsed%15,Timelimit%15,Submit,Start,End | \
   egrep -v 'pavo|vdi|singularity' > jobs.csv
 

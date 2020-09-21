@@ -9,7 +9,7 @@ sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT" \
     -E $(date -d "1 day ago" +%Y-%m-%d-23:59:59) \
     -p --delimiter=";" \
     -X -o JobID%7,JobName%20,Partition%20,User%8,Account%20,NCPUS%4,NNodes%2,Nodelist%20,Elapsed%15,Timelimit%15,Submit,Start,End | \
-    egrep -iv 'pavo|vdi|singularity' | sed 's/_1819//g' | sed 's/_1920//g' > jobs-0.csv
+    egrep -iv 'vdi|singularity' | sed 's/_1819//g' | sed 's/_1920//g' > jobs-0.csv
 ls -ltr jobs-0.csv
 
 echo "Get yesterdays usage"
@@ -18,7 +18,7 @@ sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT" \
     -E $(date -d "1 day ago" +%Y-%m-%d-23:59:59) \
     -p --delimiter=";" \
     -X -o JobID%7,JobName%20,Partition%20,User%8,Account%20,NCPUS%4,NNodes%2,Nodelist%20,Elapsed%15,Timelimit%15,Submit,Start,End | \
-    egrep -iv 'pavo|vdi|singularity' | sed 's/_1819//g' | sed 's/_1920//g' > jobs-1.csv
+    egrep -iv 'vdi|singularity' | sed 's/_1819//g' | sed 's/_1920//g' > jobs-1.csv
 ls -ltr jobs-1.csv
 
 today=$(date +%d)

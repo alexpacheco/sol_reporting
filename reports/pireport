@@ -44,7 +44,7 @@ if [[ -z $invest ]]; then
     accounts=$(sshare -o Account -n | awk '{print $1}' | egrep -i '1920|lts' | sed -e 's/_1920//g' -e 's/_s1920//g' | uniq )
     for pi in $accounts
     do
-	usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+	usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920,${pi}_f1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
 	alloclimit=$(sshare -o Account,RawUsage,GrpTRESMins -A ${pi}${ay} -n | egrep -v "^\s+" | awk -F= '{print $2/60}')
     
 	if [[ "$alloclimit" -gt "0" ]]
@@ -57,7 +57,7 @@ if [[ -z $invest ]]; then
     done
 else
     pi=$invest
-    usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+    usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920,${pi}_f1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
     alloclimit=$(sshare -o Account,RawUsage,GrpTRESMins -A ${pi}${ay} -n | egrep -v "^\s+" | awk -F= '{print $2/60}')
     
     if [[ "$alloclimit" -gt "0" ]]

@@ -1,0 +1,97 @@
+---
+title: "Training"
+output: 
+   flexdashboard::flex_dashboard:
+      orientation: rows
+      vertical_layout: scroll
+      smart: false
+---
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+<script>
+$(document).ready(function() {
+  $('.navbar').remove();
+  $('body').css('padding-top', '0px');
+});
+</script>
+<style>
+.navbar {
+  background-color:#502D0E;
+}
+.navbar-brand {
+color:white!important;
+}
+</style>
+
+```{r setup, include=FALSE}
+suppressMessages(library(tidyverse))
+library(flexdashboard)
+library(knitr)
+library(plotly)
+library(DT)
+
+Attendance <- read_csv('training.csv') %>% filter(Count > 0 )
+theme_set(theme_classic())
+```
+
+```{r}
+# Number of Sessions
+Sessions <- Attendance %>% group_by(Session,ID) %>% count()
+Major <- Attendance %>% group_by(Department) %>% count()
+Attendees <- Attendance %>% count()
+Return <- Attendance %>% group_by(Name) %>% count()
+```
+
+
+
+Row
+------------------------------------
+
+### Total Sessions
+
+```{r total_sessions}
+valueBox(length(Sessions$Session), icon = "fa-users", color = "#502D0E")
+```
+
+###  Total Attendees
+
+```{r total_attendees}
+valueBox(Attendees$n, icon = "fa-users", color = "#502D0E")
+```
+
+###  Unique Attendees
+
+```{r return_attendees}
+valueBox(length(Return$Name), icon = "fa-users", color = "#502D0E")
+```
+
+###  Major/Department
+
+```{r total_department}
+valueBox(length(Major$Department), icon = "fa-users", color = "#502D0E")
+```
+
+
+Row 
+-------------------------------------------------
+
+### 
+
+```{r}
+Attendance %>% group_by(Status) %>% summarize(Total=sum(Count), Unique=sum(n_distinct(Name))) %>% kable()
+```
+
+### 
+
+```{r}
+Attendance %>% group_by(College) %>% summarize(Total=sum(Count), Unique=sum(n_distinct(Name))) %>% kable()
+```
+
+### 
+
+```{r}
+tmp1 <- Attendance %>% group_by(AY,ID) %>% summarize(Sessions=sum(n_distinct(Session))) %>% group_by('Academic Year'=AY) %>% summarize(Sessions=sum(Sessions))
+tmp2 <- Attendance %>% group_by('Academic Year'=AY) %>% summarize(Total=sum(Count), Unique=sum(n_distinct(Name))) 
+inner_join(tmp1,tmp2) %>% kable()
+```
+

@@ -53,13 +53,13 @@ do
 	    lts|hpc2017|hpc2018)
 		if [[ "${alloc}" == "lts" ]]
 		then
-		    pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "ou:" | awk -F: '{printf "%s;",$2}')		
+		    pi=" LTS;"
 		    pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		else
 		    pi=" HPC Workshop;"
                     pistatus=" HPC Workshop; "
 		fi
-		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=alp514 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pidept=" LTS;"
 		;;
 	    amr511|amr511_1718|amr511_1819)
 		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=gil213 | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
@@ -70,6 +70,16 @@ do
 		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=div206 | grep "ou:" | awk -F: '{printf "%s;",$2}')
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    wbf0_1920)
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$3,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=div206 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    jab614_1920)
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$3,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=srr516 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=srr516 | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    che395|che395_1819)
 		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
@@ -86,19 +96,19 @@ do
 		pidept=" Computer Sci and Engineering; "
 		pistatus=" REU;"
 		;;
-	    bioe495)
-		pi=$(echo $alloc | tr [:lower:] [:upper:] | awk '{printf "%s;",$1}')
-		pidept=" BioEngineering; "
+	    bioe495|bioe316_1920|bioe295_s1920)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1920//g' -e 's/_S1920//g' | awk '{printf "%s;",$1}')
+		pidept=" Bioengineering; "
 		pistatus=" Course;"
                 ;;
-	    bioe316_1920)
-		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1920//g' | awk '{printf "%s;",$1}')
-		pidept=" BioEngineering; "
-		pistatus=" Course;"
-                ;;
-	    bio295_1819)
-		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
+	    bio295_1819|bios395_f1920)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' -e 's/_F1920//g' | awk '{printf "%s;",$1}')
 		pidept=" Biological Sciences; "
+		pistatus=" Course;"
+                ;;
+	    bsta001_f1920)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_F1920//g' | awk '{printf "%s;",$1}')
+		pidept=" Biostatistics; "
 		pistatus=" Course;"
                 ;;
 	    ese460_1819)
@@ -106,22 +116,42 @@ do
 		pidept=" Energy Systems Engineering; "
 		pistatus=" Course;"
                 ;;
+	    me450_s1920|me450_f1920)
+		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_S1920//g' -e 's/_F1920//g' | awk '{printf "%s;",$1}')
+		pidept=" Mechanical Engineering; "
+		pistatus=" Course;"
+                ;;
 	    tlt462_1819)
 		pi=$(echo $alloc | tr [:lower:] [:upper:] | sed -e 's/_1819//g' | awk '{printf "%s;",$1}')
 		pidept=" Teaching Learning Technology; "
 		pistatus=" Course;"
                 ;;
+            d4i-jca318_1920)
+		pi=" D4I Summer Institute;"
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=jca318 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=jca318 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+            d4i-woi216_1920)
+		pi=" D4I Summer Institute;"
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=woi216 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=woi216 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
 	    mem-vdf|mem-vdf_1718|mem-vdf_1819)
 		pi=" Webb-Oztekin Joint Project;"
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=ebw210 | grep "ou:" | awk -F: '{printf "%s;",$2}')
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=ebw210 | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
-	    ise|ise_1718|ise_1819)
+	    coh_1920)
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hgs219 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+                pi=$pidept
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hsg219 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+                ;;
+	    ise|ise_1718|ise_1819|ise_1920)
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "ou:" | awk -F: '{printf "%s;",$2}')
                 pi=$pidept
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "Status:" | awk -F : '{printf "%s;",$2}')
                 ;;
-	    chem|chem_1718|chem_1819|dav512|dav512_1718|dav512_1819rof2|rof2_1718|rof2_1819)
+	    chem|chem_1718|chem_1819|dav512|dav512_1718|dav512_1819rof2|rof2_1718|rof2_1819|chem_1920)
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gf03 | grep "ou:" | awk -F: '{printf "%s;",$2}')
                 pi=$pidept
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=gf03 | grep "Status:" | awk -F : '{printf "%s;",$2}')
