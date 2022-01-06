@@ -7,7 +7,9 @@ export PATH=/share/Apps/R/conda/4.3.31/bin:$PATH
 cd /home/alp514/usage
 
 ./dailyaverage.sh 2
-./dailygpu.sh 2
+#./dailygpu.sh 2
+
+#gnuplot onepage.gnu
 
 #./getuserdaily.sh
 
@@ -18,6 +20,7 @@ mday=$(date -d "today" +%d | awk '{print int($1)}')
 #gnuplot daily.gnu 2>/dev/null
 #gnuplot canvas.gnu 2>/dev/null
 
+export TMP=${HOME}/JOB_TMPDIR
 Rscript -e "rmarkdown::render('dygraph.Rmd')"
 
 

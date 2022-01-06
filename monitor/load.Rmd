@@ -1,5 +1,5 @@
 ---
-title: "Sol Monitoring"
+title: "HPC Monitoring"
 date: '`r format(Sys.time(), "%m/%d/%y %X")`'
 output:
   flexdashboard::flex_dashboard:
@@ -9,13 +9,14 @@ output:
     smart: false
     navbar:
       - { title: "Usage Summary", href: "https://webapps.lehigh.edu/hpc/usage/dashboard.html"}
+      - { title: "AY 21-22 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay2122.html"} 
+      - { title: "AY 20-21 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay2021.html"} 
       - { title: "AY 19-20 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1920.html"} 
       - { title: "AY 18-19 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1819.html"} 
-      - { title: "AY 17-18 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1718.html"} 
-      - { title: "AY 16-17 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1617.html"} 
     includes:
       in_header: header.html
 ---
+
 
 ```{r setup, include=F}
 library(flexdashboard)
@@ -35,11 +36,11 @@ colnames(node_load) <- c("Nodes","Partition","CPUs","Load","Available Memory","F
 queue_status <- read_delim('queue.csv',delim=";" )
 colnames(queue_status) =  c("Job ID","Partition","Job Name","User","Allocation","State",
    "Elapsed Time","Start Time","Submit Time","Time Requested","CPUs Requested",
-   "Nodes Requested","Memory/Core Requested","Nodelist","Reason","Priority Weights")
-queue_status <- as.tibble(lapply(queue_status,trimws)) %>% mutate_at(c(1,11,12,16),as.integer)
-jobs_now <- as.tibble(lapply(queue_status,trimws)) %>% group_by(State) %>% summarize(Jobs=n()) %>% mutate(Time=now()) %>% spread(State,Jobs)
+   "Nodes Requested","Memory/Core Requested","Nodelist","Reason","Priority","GPUs")
+queue_status <- as_tibble(lapply(queue_status,trimws)) %>% mutate_at(c(1,11,12,16),as.integer)
+jobs_now <- as_tibble(lapply(queue_status,trimws)) %>% group_by(State) %>% summarize(Jobs=n()) %>% mutate(Time=now()) %>% spread(State,Jobs)
 write_delim(jobs_now, gzfile('jobshistory.csv.gz'),delim=";", append = TRUE)
-jobshistory <- read_delim('jobshistory.csv.gz',delim=";")
+jobshistory <- read_delim('jobshistory.csv.gz',delim=";") %>% filter(Time >= today() - months(12))
 
 node_load %>% 
   separate(CPUs, c("Allocated","Idle","Drained","Total"),sep='/',convert=TRUE) -> clean_nodeload
@@ -64,10 +65,10 @@ clean_nodeload %>%
 
 
 info <-  read_delim('gpuinfo.csv',delim=";",trim_ws=TRUE)
-load <-  read_delim('gpuload.csv',delim=";",trim_ws=TRUE)
+load <-  read_delim('gpuload.csv',delim=";",trim_ws=TRUE) %>% drop_na()
 colnames(info) <- c('Node','Partition','Available')
 colnames(load) <- c('Node','Partition','GPU')
-load %>% group_by(Node,Partition) %>% summarize(Usage=sum(GPU)) -> usage
+load %>% group_by(Node,Partition) %>% summarize(Usage=sum(as.double(GPU))) %>% drop_na()  -> usage
 full_join(info,usage) -> gpuload
 gpuload[is.na(gpuload)] <- 0
 
@@ -77,7 +78,7 @@ gpuload[is.na(gpuload)] <- 0
 Status
 ====================================
 
-Row
+Row {data-height=240}
 -----------------------------------
 
 ```{r include=F}
@@ -90,6 +91,11 @@ engi <- Sol %>% filter(Partition=="engi")
 himem <- Sol %>% filter(Partition=="himem") 
 imlab2 <- Sol %>% filter(Partition=="im2080") 
 chem <- Sol %>% filter(Partition=="chem")
+health <- Sol %>% filter(Partition=="health")
+hawkcpu <- Sol %>% filter(Partition=="hawkcpu")
+hawkgpu <- Sol %>% filter(Partition=="hawkgpu")
+hawkmem <- Sol %>% filter(Partition=="hawkmem")
+infolab <- Sol %>% filter(Partition=="infolab")
 ```
 
 ### lts
@@ -134,6 +140,9 @@ gauge(round(enge$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = 
 gauge(round(engi$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#engi-1")
 ```
 
+Row {data-height=240}
+-----------------------------------
+
 ### im2080
 
 ```{r}
@@ -144,6 +153,36 @@ gauge(round(imlab2$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors 
 
 ```{r}
 gauge(round(chem$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#chem-1")
+```
+
+### health
+
+```{r}
+gauge(round(health$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#health-1")
+```
+
+### hawkcpu
+
+```{r}
+gauge(round(hawkcpu$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#hawkcpu-1")
+```
+
+### hawkgpu
+
+```{r}
+gauge(round(hawkgpu$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#hawkgpu-1")
+```
+
+### hawkmem
+
+```{r}
+gauge(round(hawkmem$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#hawkmem-1")
+```
+
+### infolab
+
+```{r}
+gauge(round(infolab$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#infolab-1")
 ```
 
 
@@ -204,9 +243,9 @@ Row
 ### Queue History
 
 ```{r}
-queuehist <- cbind(jobshistory$Running,jobshistory$Pending)
+queuehist <- cbind(jobshistory$Running,jobshistory$Pending) 
 colnames(queuehist) <- c("Running","Pending")
-dateWindow = c(as.POSIXct(today() - 2 ), now())
+dateWindow = c(as.POSIXct(today() - 7 ), now())
 dygraph( xts( queuehist, order.by = jobshistory$Time) ) %>% 
   dyOptions(stackedGraph = TRUE) %>%
   dyRangeSelector(height = 20, dateWindow = dateWindow)
@@ -253,7 +292,7 @@ Row
 ### Usage
 
 ```{r}
-Sol %>% datatable(rowname=FALSE, options = list(dom='t'),
+Sol %>% datatable(rowname=FALSE, options = list(dom = 't', pageLength = 25, autoWidth = TRUE),
   colnames = c("Partition","Total Nodes","Total Cores","Current Load",
     "Cores Consumed","Cores Idle","Cores Drained",
     "Total Memory","Free Memory","% Used","% Available", "% Unavailable"))
@@ -267,7 +306,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(State=="RUNNING") %>% select(-c(State,Reason,`Priority Weights`)) %>%
+  filter(State=="RUNNING") %>% select(-c(State,Reason,GPUs)) %>%
   datatable(filter = 'top' )
 ```
 
@@ -342,7 +381,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="lts" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="lts" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -353,7 +392,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="lts-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="lts-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -364,7 +403,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="lts" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="lts" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -438,7 +477,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im1080" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="im1080" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -449,7 +488,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im1080-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="im1080-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -461,7 +500,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im1080" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="im1080" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -536,7 +575,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="eng" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="eng" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -547,7 +586,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="eng-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="eng-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -559,7 +598,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="eng" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="eng" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -624,7 +663,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="engc" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="engc" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -636,7 +675,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="engc" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="engc" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -688,7 +727,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(str_detect(Partition, "himem") & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(str_detect(Partition, "himem") & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -700,7 +739,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(str_detect(Partition,"himem") & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(str_detect(Partition,"himem") & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -753,7 +792,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="enge" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="enge" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -765,7 +804,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="enge" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="enge" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -818,7 +857,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="engi" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="engi" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -830,7 +869,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="engi" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="engi" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -893,7 +932,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im2080" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="im2080" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -904,7 +943,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im2080-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(Partition=="im2080-gpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -916,7 +955,7 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="im2080" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(Partition=="im2080" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -980,7 +1019,8 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="chem" & State=="RUNNING") %>% select(-c(Partition,State,Reason,`Priority Weights`)) %>%
+  filter(str_detect(Partition,"chem") & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+#  filter(trimws(Partition)=="chem" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
 
@@ -992,9 +1032,347 @@ Row
 
 ```{r}
 queue_status %>% 
-  filter(Partition=="chem" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  filter(str_detect(Partition,"chem") & State=="PENDING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+#  filter(trimws(Partition)=="chem" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
   datatable(filter = 'top', options = list(pageLength = 100))
 ```
+
+health {data-navmenu="Partitions"}
+===================================
+
+
+Row 
+--------------------------------------------------------------------
+
+### health total usage 
+
+```{r}
+Sol %>% 
+  filter(Partition=="health") %>% 
+  select(c("Partition","Consumed","Idle","Drained")) %>% 
+  melt(id='Partition') %>% 
+  plot_ly(labels = ~ variable, values = ~value, type = "pie",
+    marker = list(colors = colors ) )
+```
+
+
+### health cpu usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="health") %>%
+  plot_ly(y = ~Nodes, x = ~Allocated, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Idle", marker = list( color = colors[2]) ) %>%
+  add_trace(x = ~Drained, name = "Drained", marker = list( color = colors[3])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Cores', dtick = 6 ), barmode = 'stack')
+```
+
+
+### health memory usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="health") %>%
+  mutate(Total=as.numeric(`Available Memory`)/1000,
+    Free=as.numeric(`Free Memory`)/1000) %>%
+  plot_ly(y = ~Nodes, x = ~ Free, name = "Available", type = "bar", marker = list( color = colors[2])) %>%
+  add_trace(x = ~ (Total-Free), name = "Used", marker = list( color = colors[1])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Memory (GB)', dtick = 16 ), barmode = 'stack')
+```
+
+Row
+-------------------------------------------------------------------
+
+### Running Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="health" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+Row
+-------------------------------------------------
+
+
+### Pending Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="health" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+
+hawkcpu {data-navmenu="Partitions"}
+===================================
+
+
+Row 
+--------------------------------------------------------------------
+
+### hawkcpu total usage 
+
+```{r}
+Sol %>% 
+  filter(Partition=="hawkcpu") %>% 
+  select(c("Partition","Consumed","Idle","Drained")) %>% 
+  melt(id='Partition') %>% 
+  plot_ly(labels = ~ variable, values = ~value, type = "pie",
+    marker = list(colors = colors ) )
+```
+
+
+### hawkcpu cpu usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkcpu") %>%
+  plot_ly(y = ~Nodes, x = ~Allocated, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Idle", marker = list( color = colors[2]) ) %>%
+  add_trace(x = ~Drained, name = "Drained", marker = list( color = colors[3])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Cores', dtick = 6 ), barmode = 'stack')
+```
+
+
+### hawkcpu memory usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkcpu") %>%
+  mutate(Total=as.numeric(`Available Memory`)/1000,
+    Free=as.numeric(`Free Memory`)/1000) %>%
+  plot_ly(y = ~Nodes, x = ~ Free, name = "Available", type = "bar", marker = list( color = colors[2])) %>%
+  add_trace(x = ~ (Total-Free), name = "Used", marker = list( color = colors[1])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Memory (GB)', dtick = 16 ), barmode = 'stack')
+```
+
+Row
+-------------------------------------------------------------------
+
+### Running Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkcpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+Row
+-------------------------------------------------
+
+
+### Pending Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkcpu" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+
+hawkgpu {data-navmenu="Partitions"}
+===================================
+
+
+Row 
+--------------------------------------------------------------------
+
+### hawkgpu total usage 
+
+```{r}
+Sol %>% 
+  filter(Partition=="hawkgpu") %>% 
+  select(c("Partition","Consumed","Idle","Drained")) %>% 
+  melt(id='Partition') %>% 
+  plot_ly(labels = ~ variable, values = ~value, type = "pie",
+    marker = list(colors = colors ) )
+```
+
+
+### hawkgpu cpu usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkgpu") %>%
+  plot_ly(y = ~Nodes, x = ~Allocated, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Idle", marker = list( color = colors[2]) ) %>%
+  add_trace(x = ~Drained, name = "Drained", marker = list( color = colors[3])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Cores', dtick = 6 ), barmode = 'stack')
+```
+
+### hawkgpu gpu usage per node
+
+```{r}
+gpuload %>% filter(str_detect(Partition,"hawkgpu")) %>%
+  mutate(Idle=(Available-Usage)) %>%
+  plot_ly(y = ~Node, x = ~Usage, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Available", marker = list( color = colors[2]) ) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'GPUs', dtick = 1 ), barmode = 'stack')
+```
+
+
+### hawkgpu memory usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkgpu") %>%
+  mutate(Total=as.numeric(`Available Memory`)/1000,
+    Free=as.numeric(`Free Memory`)/1000) %>%
+  plot_ly(y = ~Nodes, x = ~ Free, name = "Available", type = "bar", marker = list( color = colors[2])) %>%
+  add_trace(x = ~ (Total-Free), name = "Used", marker = list( color = colors[1])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Memory (GB)', dtick = 16 ), barmode = 'stack')
+```
+
+Row
+-------------------------------------------------------------------
+
+### Running Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkgpu" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+Row
+-------------------------------------------------
+
+
+### Pending Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkgpu" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+
+hawkmem {data-navmenu="Partitions"}
+===================================
+
+
+Row 
+--------------------------------------------------------------------
+
+### hawkmem total usage 
+
+```{r}
+Sol %>% 
+  filter(Partition=="hawkmem") %>% 
+  select(c("Partition","Consumed","Idle","Drained")) %>% 
+  melt(id='Partition') %>% 
+  plot_ly(labels = ~ variable, values = ~value, type = "pie",
+    marker = list(colors = colors ) )
+```
+
+
+### hawkmem cpu usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkmem") %>%
+  plot_ly(y = ~Nodes, x = ~Allocated, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Idle", marker = list( color = colors[2]) ) %>%
+  add_trace(x = ~Drained, name = "Drained", marker = list( color = colors[3])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Cores', dtick = 6 ), barmode = 'stack')
+```
+
+
+### hawkmem memory usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="hawkmem") %>%
+  mutate(Total=as.numeric(`Available Memory`)/1000,
+    Free=as.numeric(`Free Memory`)/1000) %>%
+  plot_ly(y = ~Nodes, x = ~ Free, name = "Available", type = "bar", marker = list( color = colors[2])) %>%
+  add_trace(x = ~ (Total-Free), name = "Used", marker = list( color = colors[1])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Memory (GB)', dtick = 16 ), barmode = 'stack')
+```
+
+Row
+-------------------------------------------------------------------
+
+### Running Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkmem" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+Row
+-------------------------------------------------
+
+
+### Pending Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="hawkmem" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+
+
+infolab {data-navmenu="Partitions"}
+===================================
+
+
+Row 
+--------------------------------------------------------------------
+
+### infolab total usage 
+
+```{r}
+Sol %>% 
+  filter(Partition=="infolab") %>% 
+  select(c("Partition","Consumed","Idle","Drained")) %>% 
+  melt(id='Partition') %>% 
+  plot_ly(labels = ~ variable, values = ~value, type = "pie",
+    marker = list(colors = colors ) )
+```
+
+
+### infolab cpu usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="infolab") %>%
+  plot_ly(y = ~Nodes, x = ~Allocated, name = "Used", type = "bar", marker = list( color = colors[1]) ) %>%
+  add_trace(x = ~Idle, name = "Idle", marker = list( color = colors[2]) ) %>%
+  add_trace(x = ~Drained, name = "Drained", marker = list( color = colors[3])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Cores', dtick = 6 ), barmode = 'stack')
+```
+
+
+### infolab memory usage per node
+
+```{r}
+clean_nodeload %>% filter(trimws(Partition)=="infolab") %>%
+  mutate(Total=as.numeric(`Available Memory`)/1000,
+    Free=as.numeric(`Free Memory`)/1000) %>%
+  plot_ly(y = ~Nodes, x = ~ Free, name = "Available", type = "bar", marker = list( color = colors[2])) %>%
+  add_trace(x = ~ (Total-Free), name = "Used", marker = list( color = colors[1])) %>%
+  layout(yaxis = list(title = '' ), xaxis = list(title = 'Memory (GB)', dtick = 16 ), barmode = 'stack')
+```
+
+Row
+-------------------------------------------------------------------
+
+### Running Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="infolab" & State=="RUNNING") %>% select(-c(Partition,State,Reason,Priority,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+Row
+-------------------------------------------------
+
+
+### Pending Jobs
+
+```{r}
+queue_status %>% 
+  filter(Partition=="infolab" & State=="PENDING") %>% select(-c(Partition,State,`Elapsed Time`,Nodelist,GPUs)) %>%
+  datatable(filter = 'top', options = list(pageLength = 100))
+```
+
+
 
 
 
@@ -1009,7 +1387,7 @@ Row
 clean_nodeload %>% 
   mutate(`Available Memory`=round(as.numeric(`Available Memory`)/1000),
      `Free Memory`=round(as.numeric(`Free Memory`)/1000)) %>%
-  datatable(options = list(pageLength = 100, dom = 't'))
+  datatable(options = list(pageLength = 200, dom = 't'))
 ```
 
 Today {data-navmenu="Jobs Completed"}
@@ -1020,12 +1398,13 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobstoday <- read_delim('jobs.csv',delim=";") 
+jobstoday <- read_delim('jobs.csv',delim=";")#, col_select=c(JobID:End)) 
 jobstoday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>% 
+  filter(as.numeric(RunTime) > 0) %>%
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1035,6 +1414,7 @@ jobstoday %>%
   select(c(Start,Submit,End)) %>%
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>%
+  filter(as.numeric(RunTime) > 0) %>%
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1061,7 +1441,6 @@ Row
 ### Jobs with RunTime > 1 min
 
 ```{r echo=F}
-jobstoday <- read_delim('jobs.csv',delim=";") 
 jobstoday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
@@ -1106,7 +1485,7 @@ Row
 jobstoday %>%
   mutate(`Wait Time (min)`=round(difftime(Start,Submit,units="mins"),2),
     `Run Time (min)`=round(difftime(End,Start,units="mins"),2)) %>%
-  select(-c(Start,Submit,End,X14)) %>%
+  select(-c(Start,Submit,End)) %>%
   datatable(filter = 'top', extensions = 'Scroller', 
     options = list(
       dom = 't',
@@ -1125,12 +1504,13 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobsyesterday <- read_delim('jobs-1.csv',delim=";") 
+jobsyesterday <- read_delim('jobs-1.csv',delim=";")#, col_select=c(JobID:End))
 jobsyesterday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>% 
+  filter(as.numeric(RunTime) > 0) %>%
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1140,6 +1520,7 @@ jobsyesterday %>%
   select(c(Start,Submit,End)) %>%
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>%
+  filter(as.numeric(RunTime) > 0) %>%
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1166,7 +1547,6 @@ Row
 ### Jobs with RunTime > 1 min
 
 ```{r echo=F}
-jobsyesterday <- read_delim('jobs-1.csv',delim=";") 
 jobsyesterday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
@@ -1211,7 +1591,7 @@ Row
 jobsyesterday %>%
   mutate(`Wait Time (min)`=round(difftime(Start,Submit,units="mins"),2),
     `Run Time (min)`=round(difftime(End,Start,units="mins"),2)) %>%
-  select(-c(Start,Submit,End,X14)) %>%
+  select(-c(Start,Submit,End)) %>%
   datatable(filter = 'top', extensions = 'Scroller', 
     options = list(
       dom = 't',
@@ -1231,16 +1611,15 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobsthismonth <- read_delim('jobs-0.csv',delim=";") 
+jobsthismonth <- read_delim('jobs-0.csv',delim=";")#, col_select=c(JobID:End)) 
 jobsthismonth %>% 
   group_by(Partition) %>% 
-  filter(Partition == "all-cpu" | Partition == "all-gpu" |
-    Partition == "lts" | Partition == "eng" | Partition == "eng-gpu" |
-    Partition == "engc" | Partition == "enge" | Partition == "engi" |
-    Partition == "imlab" | Partition == "imlab-gpu" | Partition == "himem"   ) %>% 
   select(c(Start,Submit,End)) %>% 
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>% 
+  filter(as.numeric(RunTime) > 0) %>%
+  drop_na() %>% 
+  mutate_at(c("WaitTime","RunTime"), str_replace, " mins", "") %>% 
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1250,6 +1629,9 @@ jobsthismonth %>%
   select(c(Start,Submit,End)) %>%
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>%
+  filter(as.numeric(RunTime) > 0) %>%
+  drop_na() %>% 
+  mutate_at(c("WaitTime","RunTime"), str_replace, " mins", "") %>% 
   summarize(
     Wait=round(mean(as.numeric(WaitTime)),2),
     Run=round(mean(as.numeric(RunTime)),2),
@@ -1276,13 +1658,8 @@ Row
 ### Jobs with RunTime > 1 min
 
 ```{r echo=F}
-jobsthismonth <- read_delim('jobs-0.csv',delim=";") 
 jobsthismonth %>% 
   group_by(Partition) %>% 
-  filter(Partition == "all-cpu" | Partition == "all-gpu" |
-    Partition == "lts" | Partition == "eng" | Partition == "eng-gpu" |
-    Partition == "engc" | Partition == "enge" | Partition == 'engi' |
-    Partition == "imlab" | Partition == "imlab-gpu" | Partition == "himem"   ) %>% 
   select(c(Start,Submit,End)) %>% 
   mutate(WaitTime=round(difftime(Start,Submit,units="mins"),2),
     RunTime=round(difftime(End,Start,units="mins"),2)) %>% 
@@ -1326,7 +1703,7 @@ Row
 jobsthismonth %>%
   mutate(`Wait Time (min)`=round(difftime(Start,Submit,units="mins"),2),
     `Run Time (min)`=round(difftime(End,Start,units="mins"),2)) %>%
-  select(-c(Start,Submit,End,X14)) %>%
+  select(-c(Start,Submit,End)) %>%
   datatable(filter = 'top', extensions = 'Scroller', 
     options = list(
       dom = 't',

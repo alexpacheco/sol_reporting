@@ -1,5 +1,5 @@
 ---
-title: "AY 18-19 Report"
+title: "AY 20-21 Report"
 output:
   flexdashboard::flex_dashboard:
     orientation: rows
@@ -10,6 +10,8 @@ output:
     navbar: 
       - { title: "Usage Summary", href: "https://webapps.lehigh.edu/hpc/usage/dashboard.html"}
       - { title: "Daily Monitoring", href: "https://webapps.lehigh.edu/hpc/monitor"}
+      - { title: "AY 19-20 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1920.html"} 
+      - { title: "AY 18-19 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1819.html"} 
       - { title: "AY 17-18 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1718.html"} 
       - { title: "AY 16-17 Report", href: "https://webapps.lehigh.edu/hpc/monitor/ay1617.html"} 
 ---
@@ -34,27 +36,40 @@ Summary {data-navmenu="Annual Report"}
 ==============================
 
 ```{r annual-setup,echo=F}
-jobsthisay <- read_delim('jobsalloc1819.csv.gz',delim=";") 
+jobsthisay <- read_delim('jobsalloc2021.csv.gz',delim=";") 
 
 dayspermonth = c(31,30,31,31,28,31,30,31,30,31,31,30)
 lts <- rep(20,12)*9*dayspermonth*24
 im1080 <- rep(25,12)*24*dayspermonth*24
 eng <- rep(8,12)*24*dayspermonth*24
-engc <- c(13,13,14,14,14,14,14,14,14,14,14,14)*24*dayspermonth*24
+engc <- rep(14,12)*24*dayspermonth*24
 himem <- rep(1,12)*16*dayspermonth*24
-enge <- c(7,9,9,9,9,9,10,10,10,10,10,10)*36*dayspermonth*24
+enge <- rep(8,12)*36*dayspermonth*24
 engi <- rep(2,12)*36*dayspermonth*24
-im2080 <- c(0,0,0,31,28,31,30,31,30,31,31,30)*36*12*24
-ay1819su <- lts+im1080+eng+engc+himem+enge+engi+im2080
-currmonth <- length(seq(from=as.Date("2018-10-01"), to=as.Date("2019-09-30"), by='month'))
-
+im2080 <- rep(12,12)*36*dayspermonth*24
+chem <- rep(6,12)*36*dayspermonth*24
+health <- rep(2,12)*36*dayspermonth*24
+hawkcpu <- rep(26,12)*52*dayspermonth*24*c(0.1,0.5,1,1,1,1,1,1,1,1,1,1)
+hawkgpu <- rep(4,12)*48*dayspermonth*24*c(0.1,0.5,1,1,1,1,1,1,1,1,1,1)
+hawkmem <- rep(4,12)*52*dayspermonth*24*c(0.1,0.5,1,1,1,1,1,1,1,1,1,1)
+infolab <- rep(2,12)*52*dayspermonth*24*c(0,0,0.1,1,1,1,1,1,1,1,1,1)
+ay2021su <- lts+im1080+eng+engc+himem+enge+engi+im2080+chem+health+hawkcpu+hawkgpu+hawkmem+infolab
+if ( Sys.Date() > as.Date("2021-09-30")){
+  currmonth <- length(seq(from=as.Date("2020-10-01"), to=as.Date("2021-09-30"), by='month'))
+} else {
+  if ( day_of_month > 1 ){
+    currmonth <- length(seq(from=as.Date("2020-10-01"), to=Sys.Date(), by='month'))
+  } else {
+    currmonth <- length(seq(from=as.Date("2020-10-01"), to=Sys.Date()-1, by='month'))
+  }
+}
 # read power and energy usage
-read_csv('../dashboard/monthlypower1819.csv') %>% 
+read_csv('../dashboard/monthlypower2021.csv') %>% 
   mutate(Year=year(Month),Month=month(Month,label=TRUE)) %>%
-  select(c(Year,Month,Partition,Host,Power,Energy)) -> monthlypower1819
-read_csv('../dashboard/dailypower1819.csv') %>%
+  select(c(Year,Month,Partition,Host,Power,Energy)) -> monthlypower2021
+read_csv('../dashboard/dailypower2021.csv') %>%
   mutate(Year=year(Date),Month=month(Date,label=TRUE),Day=day(Date)) %>%
-  select(c(Date,Year,Month,Day,Partition,Host,Power,Energy)) -> dailypower1819
+  select(c(Date,Year,Month,Day,Partition,Host,Power,Energy)) -> dailypower2021
 
 jobsthisay %>% 
   mutate(Year=year(End),Month=month(End,label=TRUE)) %>% 
@@ -70,9 +85,10 @@ Row
 -------------------------------------
 
 
+
 ```{r annualsummary}
 jobsthisay %>% summary %>% 
-   mutate(Partition="Total",Used=round(SU/sum(ay1819su)*100,2)) %>%
+   mutate(Partition="Total",Used=round(SU/sum(ay2021su[1:currmonth])*100,2)) %>%
    select(c(Partition,SU,'% Consumed'=Used,Jobs,Wait,Run)) -> Total_SU_Jobs
 jobsthisay %>% serial_filter %>% summary %>% 
   mutate(Partition="Total",
@@ -95,14 +111,21 @@ jobsthisay %>% dmp_filter %>% summary %>%
 
 ```{r annualsummary-total}
 jobsthisay %>% filter(str_detect(Partition,'lts')) %>% summary %>% partfilter('lts',lts) -> ltstotal
-jobsthisay %>% filter(str_detect(Partition,'imlab') | str_detect(Partition,'im1080')) %>% summary %>% partfilter('im1080',im1080) -> im1080total
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% summary %>% partfilter('im1080',im1080) -> im1080total
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% summary %>% partfilter('im2080',im2080) -> im2080total
 jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% summary %>% partfilter('eng',eng) -> engtotal
 jobsthisay %>% filter(str_detect(Partition,'engc')) %>% summary %>% partfilter('engc',engc) -> engctotal
 jobsthisay %>% filter(str_detect(Partition,'himem')) %>% summary %>% partfilter('himem',himem) -> himemtotal
 jobsthisay %>% filter(str_detect(Partition,'enge')) %>% summary %>% partfilter('enge',enge) -> engetotal
 jobsthisay %>% filter(str_detect(Partition,'engi')) %>% summary %>% partfilter('engi',engi) -> engitotal
-rbind(Total_SU_Jobs,ltstotal,im1080total,engtotal,engctotal,himemtotal,engetotal,engitotal,im2080total) %>%
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% summary %>% partfilter('chem',chem) -> chemtotal
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% summary %>% partfilter('health',health) -> healthtotal
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% summary %>% partfilter('hawkcpu',hawkcpu) -> hawkcputotal
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% summary %>% partfilter('hawkgpu',hawkgpu) -> hawkgputotal
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% summary %>% partfilter('hawkmem',hawkmem) -> hawkmemtotal
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% summary %>% partfilter('infolab',infolab) -> infolabtotal
+rbind(Total_SU_Jobs,ltstotal,im1080total,engtotal,engctotal,himemtotal,engetotal,engitotal,im2080total,chemtotal,healthtotal,
+      hawkcputotal,hawkgputotal,hawkmemtotal,infolabtotal) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -111,7 +134,7 @@ rbind(Total_SU_Jobs,ltstotal,im1080total,engtotal,engctotal,himemtotal,engetotal
 ```{r annualsummary-serial}
 jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
   serial_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_serial
-jobsthisay %>% filter(str_detect(Partition,'imlab') | str_detect(Partition,'im1080')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   serial_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_serial
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
   serial_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_serial
@@ -125,7 +148,20 @@ jobsthisay %>% filter(str_detect(Partition,'enge')) %>%
   serial_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_serial
 jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
   serial_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_serial
-rbind(serialtotal,lts_serial,im1080_serial,eng_serial,engc_serial,himem_serial,enge_serial,engi_serial,im2080_serial) %>%
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_serial
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('health',healthtotal) -> health_serial
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('hawkcpu',hawkcputotal) -> hawkcpu_serial
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('hawkgpu',hawkgputotal) -> hawkgpu_serial
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('hawkmem',hawkmemtotal) -> hawkmem_serial
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% 
+  serial_filter %>% summary %>% parttotalfilter('infolab',infolabtotal) -> infolab_serial
+rbind(serialtotal,lts_serial,im1080_serial,eng_serial,engc_serial,himem_serial,enge_serial,engi_serial,im2080_serial,chem_serial,health_serial,
+   hawkcpu_serial,hawkgpu_serial,hawkmem_serial,infolab_serial) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -134,7 +170,7 @@ rbind(serialtotal,lts_serial,im1080_serial,eng_serial,engc_serial,himem_serial,e
 ```{r annualsummary-smp}
 jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
   smp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_smp
-jobsthisay %>% filter(str_detect(Partition,'imlab') | str_detect(Partition,'im1080')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   smp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_smp
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
   smp_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_smp
@@ -148,7 +184,20 @@ jobsthisay %>% filter(str_detect(Partition,'enge')) %>%
   smp_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_smp
 jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
   smp_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_smp
-rbind(smptotal,lts_smp,im1080_smp,eng_smp,engc_smp,himem_smp,enge_smp,engi_smp,im2080_smp) %>%
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_smp
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('health',healthtotal) -> health_smp
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('hawkcpu',hawkcputotal) -> hawkcpu_smp
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('hawkgpu',hawkgputotal) -> hawkgpu_smp
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('hawkmem',hawkmemtotal) -> hawkmem_smp
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% 
+  smp_filter %>% summary %>% parttotalfilter('infolab',infolabtotal) -> infolab_smp
+rbind(smptotal,lts_smp,im1080_smp,eng_smp,engc_smp,himem_smp,enge_smp,engi_smp,im2080_smp,chem_smp,health_smp,
+   hawkcpu_smp,hawkgpu_smp,hawkmem_smp,infolab_smp) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -157,7 +206,7 @@ rbind(smptotal,lts_smp,im1080_smp,eng_smp,engc_smp,himem_smp,enge_smp,engi_smp,i
 ```{r annualsummary-dmp}
 jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_dmp
-jobsthisay %>% filter(str_detect(Partition,'imlab') | str_detect(Partition,'im1080')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_dmp
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('im2080',im2080total) -> im2080_dmp
@@ -171,7 +220,20 @@ jobsthisay %>% filter(str_detect(Partition,'enge')) %>%
   dmp_filter %>% summary %>% parttotalfilter('enge',engetotal) -> enge_dmp
 jobsthisay %>% filter(str_detect(Partition,'engi')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('engi',engitotal) -> engi_dmp
-rbind(dmptotal,lts_dmp,im1080_dmp,eng_dmp,engc_dmp,himem_dmp,enge_dmp,engi_dmp,im2080_dmp) %>%
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('chem',chemtotal) -> chem_dmp
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('health',healthtotal) -> health_dmp
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('hawkcpu',hawkcputotal) -> hawkcpu_dmp
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('hawkgpu',hawkgputotal) -> hawkgpu_dmp
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('hawkmem',hawkmemtotal) -> hawkmem_dmp
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% 
+  dmp_filter %>% summary %>% parttotalfilter('infolab',infolabtotal) -> infolab_dmp
+rbind(dmptotal,lts_dmp,im1080_dmp,eng_dmp,engc_dmp,himem_dmp,enge_dmp,engi_dmp,im2080_dmp,chem_dmp,health_dmp,
+   hawkcpu_dmp,hawkgpu_dmp,hawkmem_dmp,infolab_dmp) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -324,9 +386,9 @@ Timing %>% my_table
 jobsthisay %>% cpu_gpu_total(Account) -> total
 jobsthisay %>% cpu_total(Account) -> cpu
 jobsthisay %>% gpu_total(Account) -> gpu
-full_join(total,full_join(cpu,gpu)) -> usage1819
-usage1819[is.na(usage1819)] <- 0
-usage1819 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
+full_join(total,full_join(cpu,gpu)) -> usage1920
+usage1920[is.na(usage1920)] <- 0
+usage1920 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
 ```
 
 
@@ -390,9 +452,9 @@ Timing %>% my_table
 jobsthisay %>% cpu_gpu_total(User) -> total
 jobsthisay %>% cpu_total(User) -> cpu
 jobsthisay %>% gpu_total(User) -> gpu
-full_join(total,full_join(cpu,gpu)) -> usage1819
-usage1819[is.na(usage1819)] <- 0
-usage1819 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
+full_join(total,full_join(cpu,gpu)) -> usage1920
+usage1920[is.na(usage1920)] <- 0
+usage1920 %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) %>% my_table
 ```
 
 ### Serial
@@ -441,7 +503,7 @@ Row
 ### Summary
 
 ```{r monthly-setup,echo=F}
-jobsthisay %>% monthly_summary %>% partpercent(ay1819su) -> total
+jobsthisay %>% monthly_summary %>% partpercent(ay2021su[1:currmonth]) -> total
 jobsthisay %>% serial_filter %>% monthly_summary -> serial
 jobsthisay %>% smp_filter %>% monthly_summary -> smp
 jobsthisay %>% dmp_filter %>% monthly_summary -> dmp
@@ -470,8 +532,8 @@ total %>%
 jobsthisay %>% cpu_gpu_monthly -> total
 jobsthisay %>% cpu_monthly -> cpu
 jobsthisay %>% gpu_monthly -> gpu
-full_join(total,full_join(cpu,gpu)) %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) -> usage1819
-usage1819 %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+full_join(total,full_join(cpu,gpu)) %>% mutate('%CPU'=round(CPU/Total*100,2), '%GPU'=round(GPU/Total*100,2)) -> usage1920
+usage1920 %>% kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### Serial Jobs
@@ -504,7 +566,7 @@ Row
 ### lts
 
 ```{r monthlypart-lts}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% monthly_summary %>% partpercent(lts) %>%
+jobsthisay %>% filter(str_detect(Partition,'lts')) %>% monthly_summary %>% partpercent(lts[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -535,28 +597,28 @@ Row
 ### im1080
 
 ```{r monthlypart-im1080}
-jobsthisay %>% filter(str_detect(Partition, 'imlab') | str_detect(Partition,'im1080')) %>% monthly_summary %>% partpercent(im1080) %>%
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% monthly_summary %>% partpercent(im1080[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### Serial Jobs
 
 ```{r monthlypart-im1080-serial}
-jobsthisay %>% filter(str_detect(Partition, 'imlab') | str_detect(Partition,'im1080')) %>% serial_filter %>% monthly_summary %>%
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% serial_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### SMP Jobs
 
 ```{r monthlypart-im1080-smp}
-jobsthisay %>% filter(str_detect(Partition, 'imlab')| str_detect(Partition,'im1080')) %>% smp_filter %>% monthly_summary %>%
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% smp_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### DMP Jobs
 
 ```{r monthlypart-im1080-dmp}
-jobsthisay %>% filter(str_detect(Partition, 'imlab')| str_detect(Partition,'im1080')) %>% dmp_filter %>% monthly_summary %>%
+jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% dmp_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -566,7 +628,7 @@ Row
 ### eng
 
 ```{r monthlypart-eng}
-jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% monthly_summary %>% partpercent(eng) %>%
+jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% monthly_summary %>% partpercent(eng[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -597,8 +659,7 @@ Row
 ### engc
 
 ```{r monthlypart-engc}
-jobsthisay %>% filter(str_detect(Partition,'engc')) %>% monthly_summary %>% 
-  partpercent(engc) %>%
+jobsthisay %>% filter(str_detect(Partition,'engc')) %>% monthly_summary %>% partpercent(engc[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -629,8 +690,7 @@ Row
 ### himem
 
 ```{r monthlypart-himem}
-jobsthisay %>% filter(str_detect(Partition,'himem')) %>% monthly_summary %>%
-  partpercent(himem) %>%
+jobsthisay %>% filter(str_detect(Partition,'himem')) %>% monthly_summary %>% partpercent(himem[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -661,8 +721,7 @@ Row
 ### enge
 
 ```{r monthlypart-enge}
-jobsthisay %>% filter(str_detect(Partition,'enge')) %>% monthly_summary %>%
-  partpercent(enge) %>%
+jobsthisay %>% filter(str_detect(Partition,'enge')) %>% monthly_summary %>% partpercent(enge[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -693,8 +752,7 @@ Row
 ### engi
 
 ```{r monthlypart-engi}
-jobsthisay %>% filter(str_detect(Partition,'engi')) %>% monthly_summary %>%
-  partpercent(engi) %>%
+jobsthisay %>% filter(str_detect(Partition,'engi')) %>% monthly_summary %>% partpercent(engi[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -727,8 +785,7 @@ Row
 ### im2080
 
 ```{r monthlypart-im2080}
-jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% monthly_summary %>%
-  partpercent(im2080[4:12]) %>%
+jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% monthly_summary %>% partpercent(im2080[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
@@ -752,6 +809,201 @@ jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% smp_filter %>% monthly
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% dmp_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
+
+Row 
+------------------------------------------
+
+### chem
+
+```{r monthlypart-chem}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% monthly_summary %>% partpercent(chem[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-chem-serial}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-chem-smp}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-chem-dmp}
+jobsthisay %>% filter(str_detect(Partition,'chem')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### health
+
+```{r monthlypart-health}
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% monthly_summary %>% partpercent(health[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-health-serial}
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-health-smp}
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-health-dmp}
+jobsthisay %>% filter(str_detect(Partition,'health')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### hawkcpu
+
+```{r monthlypart-hawkcpu}
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% monthly_summary %>% partpercent(hawkcpu[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-hawkcpu-serial}
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-hawkcpu-smp}
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-hawkcpu-dmp}
+jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'hawktest')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### hawkgpu
+
+```{r monthlypart-hawkgpu}
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% monthly_summary %>% partpercent(hawkgpu[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-hawkgpu-serial}
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-hawkgpu-smp}
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-hawkgpu-dmp}
+jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+
+Row 
+------------------------------------------
+
+### hawkmem
+
+```{r monthlypart-hawkmem}
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% monthly_summary %>% partpercent(hawkmem[1:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-hawkmem-serial}
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-hawkmem-smp}
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-hawkmem-dmp}
+jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+Row 
+------------------------------------------
+
+### infolab
+
+```{r monthlypart-infolab}
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% monthly_summary %>% partpercent(infolab[3:currmonth]) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### Serial Jobs
+
+```{r monthlypart-infolab-serial}
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% serial_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### SMP Jobs
+
+```{r monthlypart-infolab-smp}
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% smp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+### DMP Jobs
+
+```{r monthlypart-infolab-dmp}
+jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% dmp_filter %>% monthly_summary %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -832,7 +1084,7 @@ Row
 ### Total 
 
 ```{r monthlyenergy-total}
-monthlypower1819 %>%
+monthlypower2021 %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -841,7 +1093,7 @@ monthlypower1819 %>%
 ### lts
 
 ```{r monthlyenergy-lts}
-monthlypower1819 %>% filter(str_detect(Partition,'lts')) %>%
+monthlypower2021 %>% filter(str_detect(Partition,'lts')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage(kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -851,7 +1103,7 @@ monthlypower1819 %>% filter(str_detect(Partition,'lts')) %>%
 ### im1080
 
 ```{r monthlyenergy-im1080}
-monthlypower1819 %>% filter(str_detect(Partition,'imlab') | str_detect(Partition,'im1080')) %>%
+monthlypower2021 %>% filter(str_detect(Partition,'im1080')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -861,7 +1113,16 @@ monthlypower1819 %>% filter(str_detect(Partition,'imlab') | str_detect(Partition
 ### eng
 
 ```{r monthyenergy-eng}
-monthlypower1819 %>% filter(Partition=="eng" | Partition=="eng-gpu") %>%
+monthlypower2021 %>% filter(Partition=="eng" | Partition=="eng-gpu") %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### engc
+
+```{r monthlyenergy-engc}
+monthlypower2021 %>% filter(str_detect(Partition,'engc')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -870,20 +1131,11 @@ monthlypower1819 %>% filter(Partition=="eng" | Partition=="eng-gpu") %>%
 Row
 ---------------------------------------------
 
-### engc
-
-```{r monthlyenergy-engc}
-monthlypower1819 %>% filter(str_detect(Partition,'engc')) %>%
-  group_by(Year,Month) %>%
-  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
-  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
-```
-
 
 ```{r monthlyenergy-himem}
 ### himem
 # himem node can only measure volts, no amp or watts skipping this node
-#monthlypower1819 %>% filter(str_detect(Partition,'himem')) %>%
+#monthlypower2021 %>% filter(str_detect(Partition,'himem')) %>%
 #  group_by(Year,Month) %>%
 #  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
 #  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -892,7 +1144,7 @@ monthlypower1819 %>% filter(str_detect(Partition,'engc')) %>%
 ### enge
 
 ```{r monthlyenergy-enge}
-monthlypower1819 %>% filter(str_detect(Partition,'enge')) %>%
+monthlypower2021 %>% filter(str_detect(Partition,'enge')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -901,7 +1153,7 @@ monthlypower1819 %>% filter(str_detect(Partition,'enge')) %>%
 ### engi
 
 ```{r monthlyenergy-engi}
-monthlypower1819 %>% filter(str_detect(Partition,'engi')) %>%
+monthlypower2021 %>% filter(str_detect(Partition,'engi')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -910,7 +1162,64 @@ monthlypower1819 %>% filter(str_detect(Partition,'engi')) %>%
 ### im2080
 
 ```{r monthlyenergy-im2080}
-monthlypower1819 %>% filter(str_detect(Partition,'im2080')) %>%
+monthlypower2021 %>% filter(str_detect(Partition,'im2080')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### chem
+
+```{r monthlyenergy-chem}
+monthlypower2021 %>% filter(str_detect(Partition,'chem')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### health
+
+```{r monthlyenergy-health}
+monthlypower2021 %>% filter(str_detect(Partition,'health')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+Row
+---------------------------------------------
+
+### hawkcpu
+
+```{r monthlyenergy-hawkcpu}
+monthlypower2021 %>% filter(str_detect(Partition,'hawkcpu')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### hawkgpu
+
+```{r monthlyenergy-hawkgpu}
+monthlypower2021 %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### hawkmem
+
+```{r monthlyenergy-hawkmem}
+monthlypower2021 %>% filter(str_detect(Partition,'hawkmem')) %>%
+  group_by(Year,Month) %>%
+  summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
+  kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
+```
+
+### infolab
+
+```{r monthlyenergy-infolab}
+monthlypower2021 %>% filter(str_detect(Partition,'infolab')) %>%
   group_by(Year,Month) %>%
   summarize('Average Power Usage (kW)'=round(sum(Power)/1000,2),'Energy Consumption (MWh)'=round(sum(Energy)/1000,2)) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive"))
@@ -923,7 +1232,7 @@ Row
 ### Energy Consumption per Server
 
 ```{r monthylenergy-server}
-monthlypower1819 %>%
+monthlypower2021 %>%
   group_by(Year,Month,Partition,Host) %>%
   summarize('Average Power Usage (W)'=round(sum(Power),2),'Energy Consumption (kWh)'=round(sum(Energy),2)) %>%
   my_longtable  
@@ -940,72 +1249,72 @@ Row {.tabset data-height=1500}
 ### October
 
 ```{r october,echo=F}
-monthly_usage( jobsthisay, as.Date("2018-10-01"), as.Date("2018-11-01") )
+monthly_usage( jobsthisay, as.Date("2020-10-01"), as.Date("2020-11-01") )
 ```
 
 ### November
 
 ```{r november,echo=F}
-monthly_usage( jobsthisay, as.Date("2018-11-01"), as.Date("2018-12-01") )
+monthly_usage( jobsthisay, as.Date("2020-11-01"), as.Date("2020-12-01") )
 ```
 
 ### December
 
 ```{r december,echo=F}
-monthly_usage( jobsthisay, as.Date("2018-12-01"), as.Date("2019-01-01") )
+monthly_usage( jobsthisay, as.Date("2020-12-01"), as.Date("2021-01-01") )
 ```
 
 ### January
 
 ```{r january,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-01-01"), as.Date("2019-02-01") )
+monthly_usage( jobsthisay, as.Date("2021-01-01"), as.Date("2021-02-01") )
 ```
 
 ### February
 
 ```{r february,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-02-01"), as.Date("2019-03-01") )
+monthly_usage( jobsthisay, as.Date("2021-02-01"), as.Date("2021-03-01") )
 ```
 
 ### March
 
 ```{r march,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-03-01"), as.Date("2019-04-01") )
+monthly_usage( jobsthisay, as.Date("2021-03-01"), as.Date("2021-04-01") )
 ```
 
 ### April
 
 ```{r april,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-04-01"), as.Date("2019-05-01") )
+monthly_usage( jobsthisay, as.Date("2021-04-01"), as.Date("2021-05-01") )
 ```
 
 ### May
 
 ```{r may,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-05-01"), as.Date("2019-06-01") )
+monthly_usage( jobsthisay, as.Date("2021-05-01"), as.Date("2021-06-01") )
 ```
 
 ### June
 
 ```{r june,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-06-01"), as.Date("2019-07-01") )
+monthly_usage( jobsthisay, as.Date("2021-06-01"), as.Date("2021-07-01") )
 ```
 
 ### July
 
 ```{r july,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-07-01"), as.Date("2019-08-01") )
+monthly_usage( jobsthisay, as.Date("2021-07-01"), as.Date("2021-08-01") )
 ```
 
 ### August
 
 ```{r august,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-08-01"), as.Date("2019-09-01") )
+monthly_usage( jobsthisay, as.Date("2021-08-01"), as.Date("2021-09-01") )
 ```
 
 ### September
 
 ```{r september,echo=F}
-monthly_usage( jobsthisay, as.Date("2019-09-01"), as.Date("2019-10-01") )
+monthly_usage( jobsthisay, as.Date("2021-09-01"), as.Date("2021-10-01") )
 ```
 

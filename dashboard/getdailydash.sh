@@ -1,15 +1,17 @@
 #!/bin/bash
 
-export PATH=/share/Apps/R/conda/2019.10/bin:/usr/local/bin:/usr/bin:$PATH
+export PATH=/usr/local/bin:/usr/bin:$PATH
+#export PATH=/share/Apps/anaconda3/2020.07/envs/r/bin:/usr/local/bin:/usr/bin:$PATH
 
 cd /home/alp514/dashboard
+cp -p /tmp/sol_value.jpg .
 
 ./getreport $(date -d "yesterday" +%Y-%m-%d) | tee -a soldaily.csv
-./getreport $(date -d "yesterday" +%Y-%m-%d) | sed -e 's/Ctr for Inn. in Teach and//g' | tee -a soldaily1920.csv
+./getreport $(date -d "yesterday" +%Y-%m-%d) | sed -e 's/LTS Ctr for Inn. in Teach and/LTS/g' | tee -a soldaily2122.csv
 
 mday=$(date -d "today" +%d | awk '{print int($1)}') 
-R -e "rmarkdown::render('dashboard.Rmd') ; rmarkdown::render('summary.Rmd'); rmarkdown::render('training.Rmd')"
-Rscript public_dash.R
+export TMP=${HOME}/JOB_TMPDIR
+singularity exec /share/Apps/virtualapps/rstudio/rstudio-r402-base.sif R -e "rmarkdown::render('dashboard.Rmd') ; rmarkdown::render('summary.Rmd'); rmarkdown::render('training.Rmd'); source('public_dash.R')"
 if [[ "$mday" -ge 2 ]] ; then
  scp -rp dashboard.html dashboard.Rmd webapps:/srv/projects/hpc/usage/ 
  scp -rp dashboard.html dashboard.Rmd webapps:/home/alp514/public_html/sol-metrics/
@@ -17,7 +19,7 @@ else
  scp -rp dashboard.html dashboard.Rmd webapps:/home/alp514/public_html/sol-metrics/
 fi
 
-scp  -rp /tmp/sol_value.jpg webapps:/srv/projects/hpc/
-scp -rp monthly*html total*html pidept*html user*html summary.html training.html webapps:/srv/projects/hpc/public/
+scp -rp sol_value.jpg webapps:/srv/projects/hpc/
+scp -rp annual*html monthly*html total*html pidept*html user*html summary.html training.html cpu_gpu*.html *powerusage.html webapps:/srv/projects/hpc/public/
 
 

@@ -1,5 +1,5 @@
 ---
-title: "Sol Usage"
+title: "HPC Usage"
 date: '`r format(Sys.Date()-1, "%B %d, %Y")`'
 output: 
   flexdashboard::flex_dashboard:
@@ -11,6 +11,19 @@ output:
       - { title: "Daily Monitoring", href: "https://webapps.lehigh.edu/hpc/monitor"}
       - { title: "System Status", href: "https://rcstatus.cc.lehigh.edu"}
 ---
+
+```{css, echo=F}
+/*
+.dataTables_scrollBody {
+    height:600px !important;
+    max-height:600px !important;
+}
+.chart-stage-flex {
+    overflow:auto !important;
+}
+*/
+```
+
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
@@ -24,7 +37,7 @@ library(plotly)
 
 # read usage by partition and clean data
 # New partition  -> add 2 to seq_len
-data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(25)), fill = TRUE)
+data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(33)), fill = TRUE)
 data[is.na(data)] <- 0
 
 # read daily usage reports
@@ -32,16 +45,20 @@ daily1617 <- read_delim('soldaily1617.csv', delim=";")
 daily1718 <- read_delim('soldaily1718.csv', delim=";")
 daily1819 <- read_delim('soldaily1819.csv', delim=";")
 daily1920 <- read_delim('soldaily1920.csv', delim=";")
+daily2021 <- read_delim('soldaily2021.csv', delim=";")
+daily2122 <- read_delim('soldaily2122.csv', delim=";")
 
-daily <- rbind(daily1617,daily1718,daily1819,daily1920)
+daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122)
 
 # get usage for last 14 days
 fortnight <- daily %>%
 filter(as.Date(Day) > today() - 15 )
 
 # read power and energy usage
-monthlypower <- read_csv('monthlypower.csv')
-dailypower <- read_csv('dailypower.csv')
+monthlypower2122 <- read_csv('monthlypower2122.csv')
+dailypower2122 <- read_csv('dailypower2122.csv')
+monthlypower2021 <- read_csv('monthlypower2021.csv')
+dailypower2021 <- read_csv('dailypower2021.csv')
 monthlypower1920 <- read_csv('monthlypower1920.csv')
 dailypower1920 <- read_csv('dailypower1920.csv')
 monthlypower1819 <- read_csv('monthlypower1819.csv')
@@ -49,7 +66,12 @@ dailypower1819 <- read_csv('dailypower1819.csv')
 monthlypower1718 <- read_csv('monthlypower1718.csv')
 dailypower1718 <- read_csv('dailypower1718.csv')
 monthlypower1617 <- read_csv('monthlypower1617.csv')
-dailypower1617 <- read_csv('dailypower1617.csv')
+dailypower1617 <- read_csv('dailypower1617.csv') %>% mutate(Power=Energy/24) %>% select(c(Date,Power,Energy))
+monthlypower <- rbind(monthlypower1617,monthlypower1718,monthlypower1819,monthlypower1920,monthlypower2021,monthlypower2122) %>%
+  group_by(Month) %>% summarize(Power=sum(Power), Energy=sum(Energy))
+dailypower <- rbind(dailypower1718,dailypower1819,dailypower1920,dailypower2021,dailypower2122) %>%
+  group_by(Date) %>% summarize(Power=sum(Power), Energy=sum(Energy))
+dailypower <- rbind(dailypower1617,dailypower)
 fortnightpower <- dailypower %>%
 filter(as.Date(Date) > today() - 15 )
 
@@ -70,6 +92,14 @@ ay1920filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2019-10-01") & Month < as.Date("2020-10-01"))
 }
+ay2021filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2020-10-01") & Month < as.Date("2021-10-01"))
+}
+ay2122filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2021-10-01") & Month < as.Date("2022-10-01"))
+}
 cy2016filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2016-01-01") & Month < as.Date("2017-01-01"))
@@ -89,6 +119,14 @@ cy2019filter <- function(data) {
 cy2020filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2020-01-01") & Month < as.Date("2021-01-01"))
+}
+cy2021filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2021-01-01") & Month < as.Date("2022-01-01"))
+}
+cy2022filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2022-01-01") & Month < as.Date("2023-01-01"))
 }
 
 currentDate <- Sys.Date()
@@ -130,8 +168,17 @@ ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,21
 # usage by month for AY 2019-20
 monthly1920 <- monthly %>% ay1920filter
 ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
-
-
+# usage by month for AY 2020-21
+monthly2021 <- monthly %>% ay2021filter
+ay2021su <- c(2404*31,2404*30,2404*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
+monthly_2021 <- monthly %>% cy2021filter
+cy2021su <- c(4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30,4260*31,4260*30,4260*31)*24
+monthly2122 <- monthly %>% ay2122filter
+ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
+monthly_2022 <- monthly %>% cy2022filter
+cy2022su <- c(4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30,4260*31,4260*30,4260*31)*24
+aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su)
+	
 # Details of Sol nodes
 # If cpu frequency is reduced
 #   Haswell & Broadwell provide 16 FLOP per cycle for AVX2 or AVX256 extensions, while
@@ -172,6 +219,16 @@ chemperf <- 1.6*avx512
 healthnodes <- 2
 healthcores <- 36
 healthperf <- 1.6*avx512
+hawkcpunodes <- 26
+hawkmemnodes <- 4
+hawkgpunodes <- 4
+infolabnodes <- 2
+hawkcpucores <- 52
+hawkgpucores <- 48
+hawkgpu <- 32
+hawkcpuperf <- 1.3*avx512
+hawkgpuperf <-  1.3*avx256
+
 superyear <- 24*365
 
 lts <- ltsnodes*ltscores*24
@@ -184,17 +241,34 @@ engi <- enginodes*engicores*24
 im2080 <- im2080nodes*im2080cores*24
 chem <- (engecnodes + chemnodes)*chemcores*24
 health <- healthnodes*healthcores*24
-all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health
+hawk <- (hawkcpunodes + hawkmemnodes)*hawkcpucores*24 + hawkgpunodes*hawkgpucores*24
+infolab <- infolabnodes *hawkcpucores*24 
+all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health + hawk + infolab
 
-totalnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes
-totalcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores
-totalmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192
-totalperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf + healthnodes*healthcores*healthperf)/1000
+solnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes + infolabnodes
+hawknodes <- hawkcpunodes + hawkmemnodes + hawkgpunodes
+totalnodes <- solnodes + hawknodes
+solcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores + infolabnodes*hawkcpucores
+hawkcores <- (hawkcpunodes + hawkmemnodes)*hawkcpucores + hawkgpunodes*hawkgpucores
+totalcores <- solcores + hawkcores
+solmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192 + infolabnodes * 384
+hawkmem <- hawkcpunodes * 384 + hawkmemnodes * 1536 + hawkgpunodes * 192
+totalmem <- solmem + hawkmem
+solperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + 
+     (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf + healthnodes*healthcores*healthperf)/1000 + 
+     infolabnodes*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000
+hawkperf <- (hawkcpunodes + hawkmemnodes)*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000
+totalperf <- solperf + hawkperf
 
-gpumem <- im1080gpu * 8 + im2080gpu * 11
+solgpumem <- im1080gpu * 8 + im2080gpu * 11
+hawkgpumem <- hawkgpu * 16
+gpumem <- solgpumem + hawkgpumem
 im1080cuda <- im1080gpu * 2560
 im2080cuda <- im2080gpu * 4352
-totalgpuperf <- im1080gpu*257/1000 + im2080gpu*367.2/1000
+teslat4cuda <- hawkgpu * 2560
+solgpuperf <- im1080gpu*257/1000 + im2080gpu*367.2/1000
+hawkgpuperf <- hawkgpu*253.38/1000
+totalgpuperf <- solgpuperf + hawkgpuperf
 ```
 
 ```{r def_func, include=F}
@@ -276,6 +350,89 @@ gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
 Row {.tabset}
 --------------------------------------------------------------------
 
+### HPC Clusters 
+#### HPC provides two Clusters, Sol and Hawk with a total of `r totalnodes` nodes.
+
+* Sol is a `r solnodes` node heterogeneous cluster launched on Oct 1, 2016 initially with `r ltsnodes+im1080nodes` nodes.
+   * `r solcores` CPUs with `r sprintf("%4.2f",solmem/1000)`TB memory providing a total performance of `r solperf` TFLOPs.
+   * `r im1080gpu+im2080gpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda)` CUDA Cores) with `r solgpumem`GB memory providing a total performance of `r solgpuperf` TFLOPs.
+   * Total Performance (frequency scaled for full AVX2/AVX512 support): `r solperf+solgpuperf` TFLOPs
+   * SUs available: `r sprintf("%d", solcores*24)` daily or `r sprintf("%d", solcores*superyear)` annually
+* Hawk, an NSF Campus Cyberinfrastructure award funded `r hawknodes` node hybrid cluster put into production on Feb 1, 2021
+   * `r hawkcores` CPUs with `r sprintf("%4.2f",hawkmem/1000)`TB memory providing a total performance of `r hawkperf` TFLOPs.
+   * `r hawkgpu` GPUs (`r sprintf("%6d",teslat4cuda)` CUDA Cores) with `r hawkgpu*16`GB memory providing a total performance of `r hawkgpuperf` TFLOPs.
+   * Total Performance (frequency scaled for full AVX2/AVX512 support): `r hawkperf+hawkgpuperf` TFLOPs
+   * SUs available: `r sprintf("%d", hawkcores*24)` daily or `r sprintf("%d", hawkcores*superyear)` annually
+
+* Total Performance
+   * `r totalcores` CPUs with `r sprintf("%4.2f",totalmem/1000)`TB memory providing a total performance of `r totalperf` TFLOPs.
+   * `r im1080gpu+im2080gpu+hawkgpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda+teslat4cuda)` CUDA Cores) with `r gpumem`GB memory providing a total performance of `r totalgpuperf` TFLOPs.
+   * Total Performance (frequency scaled for full AVX2/AVX512 support): `r totalperf+totalgpuperf` TFLOPs
+   * SUs available: `r sprintf("%d", totalcores*24)` daily or `r sprintf("%d", totalcores*superyear)` annually
+
+
+### Total Usage
+
+```{r fortnighthpcusage_setup}
+# create time series for dygraphs
+days <- length(data$V1)
+d1 <- seq(as.POSIXct(data[1,1]), by = "days", length = days)
+
+solmetric <- data$V2
+
+#dateWindow = c(today() - 30 , today() - 1 )
+dateWindow = c(as.Date("2016-08-08"), today() - 1 )
+
+solmetric <- data$V2
+mydygraph(solmetric, "Total") %>% 
+  dyRoller(rollPeriod = 30) %>% 
+  dyRangeSelector( dateWindow = dateWindow ) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") 
+```
+
+### Energy Consumption
+
+```{r}
+dateWindow = c(as.Date("2017-05-01") , today() + 31 )
+dygraph( xts(cbind(dailypower$Energy), order.by = dailypower$Date)) %>%
+  dySeries("V1", label = "Energy", color = "black") %>%
+  dyAxis("y", label = "Average Daily Energy consumption (Wh)") %>%
+  dyOptions(stackedGraph = TRUE, axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyLegend(width = 400) %>%
+  dyRoller(rollPeriod = 14) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
+  dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyRangeSelector( dateWindow = dateWindow)
+```
 
 ```{r topuser_setup}
 topuserstotal <- function(data, n = 10) {
@@ -283,15 +440,26 @@ data %>%
   group_by(Name,Department,PI,PIDept,Status) %>%
   summarize(Total=sum(round(as.double(Total)))) %>%
   arrange(desc(Total)) %>% head(n) %>%
-  datatable(rownames=FALSE,options=list(dom='t'),extensions = 'Responsive')
+  datatable(rownames=FALSE,options=list(dom='t', autoWidth = FALSE),extensions = 'Responsive')
 }
 topusersjobs <- function(data, n = 10) {
 data %>%
   group_by(Name,Department,PI,PIDept,Status) %>%
   summarize(Jobs=sum(round(as.double(TotalJ)))) %>%
   arrange(desc(Jobs)) %>% head(n) %>%
-  datatable(rownames=FALSE,options=list(dom='t'),extensions = 'Responsive')
+  datatable(rownames=FALSE,options=list(dom='t', autoWidth = FALSE),extensions = 'Responsive')
 }
+toppis <- function(data, n) {
+if (missing(n)){
+  n <- 10
+}
+data %>%
+  group_by(PI,PIDept) %>%
+  summarize(SUs=sum(round(as.double(Total))),Jobs=sum(round(as.double(TotalJ)))) %>%
+  arrange(desc(SUs)) %>% head(n) %>%
+  datatable(rownames=FALSE,options=list(dom='t', autoWidth = FALSE),extensions = 'Responsive')
+}
+
 ```
 
 
@@ -311,31 +479,28 @@ fortnight %>% topusersjobs
 ### AWS Comparison
 
 ```{r aws_sol, fig.width=7, fig.height=5}
-knitr::include_graphics('/tmp/sol_value.jpg')
+knitr::include_graphics('./sol_value.jpg')
 ```
 
 
-Row {data-height=550}
+Row {data-height=450}
 -----------------------------------------------------------------------
 
-### Sol Usage
+### Sol
 
 ```{r fortnightsolusage_setup}
 # create time series for dygraphs
 days <- length(data$V1)
 d1 <- seq(as.POSIXct(data[1,1]), by = "days", length = days)
 
-solmetric <- data$V2
-
 dateWindow = c(today() - 30 , today() - 1 )
+#dateWindow = c(as.Date("2016-10-01"), today() - 1 )
 
-solmetric <- data$V2
+solmetric <- data$V4+data$V6+data$V8+data$V10+data$V12+data$V14+data$V16+data$V18+data$V20+data$V22+data$V24+data$V32
 mydygraph(solmetric, "Total") %>% dyRangeSelector( dateWindow = dateWindow)
 ```
 
-### Description
-
-#### Sol is a `r totalnodes` node heterogeneous cluster launched on Oct 1, 2016 initially with `r ltsnodes+im1080nodes` nodes.
+### Sol is a `r solnodes` node heterogeneous cluster launched on Oct 1, 2016 initially with `r ltsnodes+im1080nodes` nodes.
 
 * 1 Interactive node: Two 2.3GHz 10-core Intel Xeon E5-2650 v3, 25M Cache, 128GB 2133MHz RAM
 * `r ltsnodes` Compute Nodes: Two 2.3GHz 10-core Intel Xeon E5-2650 v3, 25M Cache, 128GB 2133MHz RAM
@@ -347,17 +512,49 @@ mydygraph(solmetric, "Total") %>% dyRangeSelector( dateWindow = dateWindow)
 * `r engenodes+enginodes+engecnodes+im2080nodes` Compute Nodes: Two 2.3GHz 18-core Intel Xeon Gold 6140, 24.75M Cache, 192GB 2666MHz RAM
    * ASUS Geforce RTX 2080 TI PCIE 11GB GDDR5 (4x on 12 nodes)
 * `r chemnodes+healthnodes` Compute Nodes: Two 2.6GHz 18-core Intel Xeon Gold 6240, 24.75M Cache, 192GB 2933MHz RAM
+* `r infolabnodes` Compute Nodes: Two 2.1Gz 26-core Intel Xeon Gold 6230R, 35.75M Cache, 384GB 2933MHz RAM
+
+* Nodes contain
+   * 1TB HDD
+   * 100 Gb/s EDR Infiniband network interface (except infolab nodes)
+   * 10 GbE and 1 GbE network interface
+   * CentOS 8.x  
+
+Row {data-height=450}
+-----------------------------------------------------------------------
+
+### Hawk
+
+```{r fortnighthawkusage_setup}
+# create time series for dygraphs
+days <- length(data$V1)
+d1 <- seq(as.POSIXct(data[1,1]), by = "days", length = days)
+
+
+dateWindow = c(today() - 30 , today() - 1 )
+#dateWindow = c(as.Date("2020-11-11"), today() - 1 )
+
+solmetric <- data$V26+data$V28+data$V30
+mydygraph(solmetric, "Total") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Hawk, an NSF Campus Cyberinfrastructure award funded `r hawknodes` node hybrid cluster put into production on Feb 1, 2021
+
+* `r hawkcpunodes` Compute Nodes: Two 2.1Gz 26-core Intel Xeon Gold 6230R, 35.75M Cache, 384GB 2933MHz RAM
+* `r hawkmemnodes` Compute Nodes: Two 2.1Gz 26-core Intel Xeon Gold 6230R, 35.75M Cache, 1536GB 2933MHz RAM
+* `r hawkgpunodes` Compute Nodes: Two 2.2Gz 24-core Intel Xeon Gold 5220R, 35.75M Cache, 192GB 2933MHz RAM
+   * 8x NVIDIA Tesla T4 PCIE 16GB GDDR6
+
 * All Nodes contain
    * 1TB HDD
-   * 100 Gb/s EDR Infiniband network interface
    * 10 GbE and 1 GbE network interface
-   * CentOS 7.x  
+   * CentOS 8.x  
 
-#### Performance
-* `r totalcores` CPUs with `r sprintf("%4.2f",totalmem/1000)`TB memory providing a total performance of `r totalperf` TFLOPs.
-* `r im1080gpu+im2080gpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda)` CUDA Cores) with `r gpumem`GB memory providing a total performance of `r totalgpuperf` TFLOPs.
-* Total Performance (frequency scaled for full AVX2/AVX512 support): `r totalperf+totalgpuperf` TFLOPs
-* SUs available: `r sprintf("%d", totalcores*24)` daily or `r sprintf("%d", totalcores*superyear)` annually
+* Total Performance
+   * `r hawkcores` CPUs with `r sprintf("%4.2f",hawkmem/1000)`TB memory providing a total performance of `r hawkperf` TFLOPs.
+   * `r hawkgpu` GPUs (`r sprintf("%6d",teslat4cuda)` CUDA Cores) with `r hawkgpu*16`GB memory providing a total performance of `r hawkgpuperf` TFLOPs.
+   * Total Performance (frequency scaled for full AVX2/AVX512 support): `r hawkperf+hawkgpuperf` TFLOPs
+   * SUs available: `r sprintf("%d", hawkcores*24)` daily or `r sprintf("%d", hawkcores*superyear)` annually
 
 
 Row {data-height=240}
@@ -525,7 +722,7 @@ mydygraph(solmetric,"chem") %>% dyRangeSelector( dateWindow = dateWindow)
 ### Description
 
 This partition provides `r engecnodes` 36-core Skylake and `r chemnodes` 36-core Cascade Lake nodes made available to the HPC user community on June 1, 2020.
-It provides `r (engecnodes+chemnodes)*engecores` compute cores with a total performance of `r (engecnodes*engecores*engeperf+chemnodes*chemcores*chemperf)/1000` TFLOPs, `r sprintf("%d",chem)` SUs and `r sprintf("%d", (engecnodes*engecores+chemnodes*chemcores)*superyear)` SUs
+It provides `r (engecnodes+chemnodes)*engecores` compute cores with a total performance of `r (engecnodes*engecores*engeperf+chemnodes*chemcores*chemperf)/1000` TFLOPs, `r sprintf("%d",chem)` SUs and `r sprintf("%d", (engecnodes*engecores+chemnodes*chemcores)*superyear)` SUs.
 
 These nodes are a condo investment by  Lisa Fredin, Chemistry. The Skylake nodes were part of the enge partition between 2 Nov, 2018 and 31 May 2020.  
 
@@ -543,7 +740,70 @@ mydygraph(solmetric,"health") %>% dyRangeSelector( dateWindow = dateWindow)
 ### Description
 
 This partition provides `r healthnodes` 36-core Cascade Lake nodes made available to the HPC user community on August 1, 2020.
-It provides `r healthnodes*healthcores` compute cores with a total performance of `r (healthnodes*healthcores*healthperf)/1000` TFLOPs, `r sprintf("%d",health)` SUs daily and `r sprintf("%d", (healthnodes*healthcores)*superyear)` SUs annually
+It provides `r healthnodes*healthcores` compute cores with a total performance of `r (healthnodes*healthcores*healthperf)/1000` TFLOPs, `r sprintf("%d",health)` SUs daily and `r sprintf("%d", (healthnodes*healthcores)*superyear)` SUs annually.
+
+Row {data-height=240}
+-------------------
+
+### hawkcpu
+
+```{r fortnight_hawkcpu}
+solmetric <- data$V26
+mydygraph(solmetric,"hawkcpu") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r hawkcpunodes` 52-core Cascade Lake nodes from the Hawk Cluster. These were made available to the HPC user community in user friendly mode on December 7, 2020 and in production on February 1, 2021.
+It provides `r hawkcpunodes*hawkcpucores` compute cores with a total performance of `r (hawkcpunodes*hawkcpucores*hawkcpuperf)/1000` TFLOPs, `r sprintf("%d",hawkcpunodes*hawkcpucores*24)` SUs daily and `r sprintf("%d", (hawkcpunodes*hawkcpucores)*superyear)` SUs annually.
+
+Row {data-height=240}
+-------------------
+
+### hawkmem
+
+```{r fortnight_hawkmem}
+solmetric <- data$V28
+mydygraph(solmetric,"hawkmem") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r hawkmemnodes` 52-core Cascade Lake large memory nodes from the Hawk Cluster. These were made available to the HPC user community in user friendly mode on December 7, 2020 and in production on February 1, 2021.
+It provides `r hawkmemnodes*hawkcpucores` compute cores with a total performance of `r (hawkmemnodes*hawkcpucores*hawkcpuperf)/1000` TFLOPs, `r sprintf("%d",hawkmemnodes*hawkcpucores*24)` SUs daily and `r sprintf("%d", (hawkmemnodes*hawkcpucores)*superyear)` SUs annually.
+
+Row {data-height=240}
+-------------------
+
+### hawkgpu
+
+```{r fortnight_hawkgpu}
+solmetric <- data$V30
+mydygraph(solmetric,"hawkgpu") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r hawkgpunodes` 48-core Cascade Lake GPU enabled nodes from the Hawk Cluster. These were made available to the HPC user community in user friendly mode on December 7, 2020 and in production on February 1, 2021.
+It provides `r hawkgpunodes*hawkgpucores` compute cores with a total performance of `r (hawkgpunodes*hawkgpucores*hawkgpuperf)/1000` TFLOPs, `r sprintf("%d",hawkgpunodes*hawkgpucores*24)` SUs daily and `r sprintf("%d", (hawkgpunodes*hawkgpucores)*superyear)` SUs annually.
+Each node provides 8 NVIDIA Tesla T4 GPU each providing a total of `r hawkgpu*16`GB GPU memory, `r sprintf("%d",teslat4cuda)` CUDA cores and perfomance of `r hawkgpuperf` TFLOPs. 
+
+Row {data-height=240}
+-------------------
+
+### infolab
+
+```{r fortnight_infolab}
+solmetric <- data$V32
+mydygraph(solmetric,"infolab") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r infolabnodes` 52-core Cascade Lake nodes that were made available to the HPC user community on January 1, 2021.
+It provides `r infolabnodes*hawkcpucores` compute cores with a total performance of `r (infolabnodes*hawkcpucores*hawkcpuperf)/1000` TFLOPs, `r sprintf("%d",infolabnodes*hawkcpucores*24)` SUs daily and `r sprintf("%d", (infolabnodes*hawkcpucores)*superyear)` SUs annually.
+
+These nodes are condo investments by Brian Chen, Computer Science and Engineering.
 
 
 This Month
@@ -708,7 +968,31 @@ mydygraph(dataslice$V22, "chem")
 ### health
 
 ```{r thismonth_health}
-mydygraph(dataslice$V24, "chem")
+mydygraph(dataslice$V24, "health")
+```
+
+### hawkcpu
+
+```{r thismonth_hawkcpu}
+mydygraph(dataslice$V26, "hawkcpu")
+```
+
+### hawkmem
+
+```{r thismonth_hawkmem}
+mydygraph(dataslice$V28, "hawkmem")
+```
+
+### hawkgpu
+
+```{r thismonth_hawkgpu}
+mydygraph(dataslice$V30, "hawkgpu")
+```
+
+### infolab
+
+```{r thismonth_infolab}
+mydygraph(dataslice$V32, "infolab")
 ```
 
 Row
@@ -777,6 +1061,10 @@ pq <- tribble(
       "im2080",sum(dataslice$V20),
       "chem",sum(dataslice$V22),
       "health",sum(dataslice$V24),
+      "hawkcpu",sum(dataslice$V26),
+      "hawkmem",sum(dataslice$V28),
+      "hawkgpu",sum(dataslice$V30),
+      "infolab",sum(dataslice$V32),
       "all-cpu",sum(dataslice$V12) )
 ```
 
@@ -1030,7 +1318,31 @@ mydygraph(dataslice$V22, "chem")
 ### health
 
 ```{r prevmonth_health}
-mydygraph(dataslice$V24, "chem")
+mydygraph(dataslice$V24, "health")
+```
+
+### hawkcpu
+
+```{r prevmonth_hawkcpu}
+mydygraph(dataslice$V26, "hawkcpu")
+```
+
+### hawkmem
+
+```{r prevmonth_hawkmem}
+mydygraph(dataslice$V28, "hawkmem")
+```
+
+### hawkgpu
+
+```{r prevmonth_hawkgpu}
+mydygraph(dataslice$V30, "hawkgpu")
+```
+
+### infolab
+
+```{r prevmonth_infolab}
+mydygraph(dataslice$V32, "infolab")
 ```
 
 
@@ -1100,6 +1412,10 @@ pq <- tribble(
       "im2080",sum(dataslice$V20),
       "chem",sum(dataslice$V22),
       "health",sum(dataslice$V24),
+      "hawkcpu",sum(dataslice$V26),
+      "hawkmem",sum(dataslice$V28),
+      "hawkgpu",sum(dataslice$V30),
+      "infolab",sum(dataslice$V32),
       "all-cpu",sum(dataslice$V12) )
 ```
 
@@ -1190,6 +1506,470 @@ plot_ly(p, labels = ~PI, values = ~Single, type = 'pie', textposition = 'inside'
 plot_ly(p, labels = ~PI, values = ~Multi, type = 'pie', textposition = 'inside', textinfo = 'label', showlegend = F)
 ```
 
+
+Summary {data-navmenu="Annual Reports"}
+====================================================================
+
+Row
+--------------------------------------------------------------------
+
+```{r annualrep_monthly_setup}
+compress <- function(tx) {
+  tx <- as.numeric(gsub("\\,", "", tx))
+  int <- c(1e-2, 1, 1e3, 1e6, 1e9, 1e12)
+  div <- findInterval(tx, int)
+  paste(round( tx/int[div], 2), c(1e-2,"", "K","M","B","T")[div] )
+}
+
+monthlyreport  <- monthly %>% 
+  group_by(Month) %>%	
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+pireport <- monthly %>% 
+  group_by(PI) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ)))) 
+
+pideptreport <- monthly %>% 
+  group_by(PIDept) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+deptreport <- monthly %>% 
+  group_by(Department) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+userusage <- monthly %>% 
+  group_by(Status) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+users <- monthly %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+
+pis <- monthly %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+pidept <- monthly %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+
+dept <- monthly %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+
+forttotal <- sum(pis$Total)
+fortusage <- round(forttotal/(sum(aysu))*100)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r annualrep_users}
+valueBox(n_distinct(users$Name), icon = "fa-users")
+```
+
+### Active PIs
+
+```{r annualrep_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md")
+```
+
+### PI Departments
+
+```{r annualrep_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
+```
+
+### Users Major/Department
+
+```{r annualrep_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university")
+```
+
+### SUs consumed
+
+	```{r annualrep_susconsumed}
+valueBox(compress(forttotal), icon = "fa-desktop")
+```
+
+
+### Jobs
+
+```{r annualrep_jobs}
+valueBox(compress(fortjobs), icon = "fa-desktop")
+```
+
+### % of SUs consumed
+
+```{r annualrep_sus}
+gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
+success = c(71, 100), warning = c(50, 70), danger = c(0, 49)
+))
+```
+
+	
+Row {.tabset}
+--------------------------------
+
+### Top Users 
+
+```{r annualrep_users_sus-jobs}
+monthly %>% group_by(Name,Major=Department,PI,Department=PIDept,Status) %>%
+	summarize(SUs=sum(round(as.double(Total))),Jobs=sum(round(as.double(TotalJ)))) %>%
+	arrange(desc(SUs),desc(Jobs)) %>% head(25) %>%
+	datatable(rownames=FALSE,options=list(dom='t', autoWidth = TRUE))
+```
+
+### Top PIs
+
+```{r annualrep_pis_sus-jobs}
+monthly %>% group_by(PI,Department=PIDept) %>%
+	summarize(SUs=sum(round(as.double(Total))),Jobs=sum(round(as.double(TotalJ)))) %>%
+	arrange(desc(SUs),desc(Jobs)) %>% head(25) %>% 
+	datatable(rownames=FALSE,options=list(dom = 't', autoWidth = TRUE))
+```	
+
+### Top Majors 
+
+```{r annualrep_majors_sus-jobs}
+monthly %>% group_by(Major=Department,Status) %>%
+	summarize(Users=n_distinct(Name),SUs=sum(round(as.double(Total))),Jobs=sum(round(as.double(TotalJ)))) %>%
+	arrange(desc(SUs),desc(Jobs),desc(Users)) %>% head(25) %>%
+	datatable(rownames=FALSE,options=list(dom='t', autoWidth = TRUE))
+```
+
+### Top Departments
+
+```{r annualrep_pidept_sus-jobs}
+monthly %>% group_by(Department=PIDept) %>%
+	summarize(PI=n_distinct(PI),Users=n_distinct(Name),SUs=sum(round(as.double(Total))),Jobs=sum(round(as.double(TotalJ)))) %>%
+	arrange(desc(SUs),desc(Jobs),desc(PI),desc(Users)) %>% head(25) %>% 
+	datatable(rownames=FALSE,options=list(dom = 't', autoWidth = TRUE))
+```	
+
+### Total Usage
+
+	
+```{r annualrep_summary_setup}
+aymonth<- seq(as.Date("2016-10-01"), as.Date("2022-09-30"), by = "month")
+AYSU <- tibble(Month=aymonth,Available=aysu) %>% filter(Month <= today())
+aydaily <- AYSU %>% mutate(Date = ymd(Month)) %>% group_by(Date) %>% expand(Date = seq(floor_date(Date, unit = "month"), today(), by="day"), Available)
+
+#length(aysu)
+monthly_summary <- daily %>%
+  group_by(Month=floor_date(as.Date(Day),"month")) %>%
+  summarize(Total=sum(as.double(Total)),
+	          Jobs=sum(as.double(TotalJ))) %>%
+  drop_na()
+##monthly$Available <- aysu
+monthly_summary <- left_join(monthly_summary,AYSU)
+dateWindow = c(as.Date("2016-09-01") , today() + 31 )
+
+annual_summary <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year")) %>%
+	summarize(SUs=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+pis <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year"),PI) %>%
+	summarize(PI=n()) %>%
+	tally(n = 'PI')
+pidept <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year"),PIDept) %>%
+	summarize(PIDept=n()) %>%
+	tally(n = 'PIDept')
+users <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year"),Name) %>%
+	summarize(Users=n()) %>%
+	tally(n = 'Users')
+dept <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year"),Department) %>%
+	summarize(Department=n()) %>%
+	tally(n = 'Department')
+annual_summary <- left_join(left_join(left_join(left_join(annual_summary,pis),users),pidept),dept)
+
+pideptusage <- daily %>%
+	group_by(PIDept) %>%
+	summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)),User=sum(n_distinct(Name)))
+userdeptusage <- daily %>%
+	group_by(Department) %>%
+	summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)),User=sum(n_distinct(Name)))
+```
+	
+```{r annualrep_monthly_usage}
+dygraph( xts(cbind(monthly_summary$Total,monthly_summary$Available), order.by = monthly_summary$Month)) %>%
+  dySeries("V1", label = "Consumed", color = "blue", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dySeries("V2", label = "Total Available", color = "green", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dyAxis("y", label = "CPU Hours per Month") %>%
+  dyOptions(stackedGraph = FALSE, axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyRoller(rollPeriod = 1) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
+  dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Number of Jobs
+	
+```{r annualrep_monthly_jobs}
+dygraph( xts(monthly_summary$Jobs, order.by = monthly_summary$Month)) %>%
+  dySeries("V1", label = "Jobs", color = "blue", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dyAxis("y", label = "Jobs per Month") %>%
+  dyOptions(stackedGraph = FALSE, axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyRoller(rollPeriod = 1) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
+  dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Usage by Job Type
+
+```{r annualrep_sus_type}
+sujobs <- daily %>%
+  group_by(Month=floor_date(as.Date(Day),"month")) %>%
+  summarize(Serial=sum(as.double(Serial)),SMP=sum(as.double(Single)),Multi=sum(as.double(Multi)),
+            SerialJ=sum(as.double(SerialJ)),SMPJ=sum(as.double(SingleJ)),MultiJ=sum(as.double(MultiJ))) %>%
+  drop_na()
+dygraph(xts(cbind(sujobs$Serial,sujobs$SMP,sujobs$Multi), order.by = sujobs$Month )) %>%
+  dySeries("V1", label = "Serial", color = "blue", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dySeries("V2", label = "Single", color = "green", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dySeries("V3", label = "Multi", color = "orange", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dyOptions(stackedGraph = TRUE,axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE ) %>%
+  dyAxis("y", label = "CPU Hours per Month") %>%
+  dyLegend(show = "follow" ) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Number of Jobs by Type
+
+```{r annualrep_jobs_type}
+dygraph(xts(cbind(sujobs$SerialJ,sujobs$SMPJ,sujobs$MultiJ), order.by = sujobs$Month )) %>%
+  dySeries("V1", label = "Serial", color = "blue", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dySeries("V2", label = "Single", color = "green", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dySeries("V3", label = "Multi", color = "orange", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dyOptions(stackedGraph = TRUE,axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE ) %>%
+  dyAxis("y", label = "CPU Hours per Month") %>%
+  dyLegend(show = "follow" ) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Power Consumption
+
+```{r annualrep_powerconsump}
+dygraph( xts(cbind(monthlypower$Power/1000,monthlypower$Energy/1000), order.by = monthlypower$Month)) %>%
+  dySeries("V1", label = "Power/kW", color = "blue", stepPlot = TRUE, fillGraph = TRUE) %>%
+	dySeries("V2", label = "Energy/MWh", color = "green", stepPlot = TRUE, fillGraph = TRUE) %>%
+  dyAxis("y", label = "Average Monthly consumption") %>%
+  dyOptions(stackedGraph = FALSE, axisLineWidth = 1.5, fillGraph = TRUE, drawGrid = FALSE, labelsKMB = TRUE) %>%
+  dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+  dyRoller(rollPeriod = 1) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
+  dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyRangeSelector( dateWindow =  c(as.Date("2017-06-01") , today() + 31 ))
+```
+
+Row {.tabset}
+----------------------------------------------------------	
+
+### CPU Hours consumed
+	
+```{r annualrep_usageperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~SUs, type = 'bar', name = "SUs consumed") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'CPU Hours consumed' ))
+```
+
+
+### Number of Jobs
+	
+```{r annualrep_jobsperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~Jobs, type = 'bar', name = "Number of Jobs") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'Number of Jobs' ))
+```
+
+	
+### Number of PIs
+	
+```{r annualrep_pisperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~PI, type = 'bar', name = "Number of PIs") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'Number of PIs' ))
+```
+
+	
+### Number of Users
+	
+```{r annualrep_usersperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~Users, type = 'bar', name = "Number of Users") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'Number of Users' ))
+```
+
+### Number of Department by PI
+	
+```{r annualrep_pideptsperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~PIDept, type = 'bar', name = "Number of Departments") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'Number of Departments' ))
+```
+
+	
+### Number of Major/Department by Users
+	
+```{r annualrep_userdeptsperyear}
+annual_summary %>%
+	plot_ly(x = ~Year, y = ~Department, type = 'bar', name = "Number of Major/Departments") %>%
+	layout(xaxis = list(title = '' ), yaxis = list(title = 'Number of Major/Departments' ))
+```
+
+### Usage by User Type
+	
+```{r annualrep_userstatussus}
+users_status <- daily %>% group_by(Status) %>%
+	summarize(Total=round(sum(as.double(Total)),2),
+	          User=n_distinct(Name),
+	          Jobs=round(sum(as.double(TotalJ)))) %>%
+	filter(Total > 1)
+users_status %>%
+	plot_ly(x = ~Total, y = ~Status, type = 'bar', name = "SUs consumed") %>%
+	layout(xaxis = list(title = '', type = 'log'),
+	   yaxis = list(title = '' ),
+	   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Jobs by User Type
+	
+```{r annualrep_userstatusjobs}
+users_status %>%
+	plot_ly(x = ~Jobs, y = ~Status, type = 'bar', name = "Number of Jobs") %>%
+	layout(xaxis = list(title = '', type = 'log'),
+	   yaxis = list(title = '' ),
+	   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+	
+
+### Number of Users by Type
+	
+```{r annualrep_userstatusnum}
+users_status %>%
+	plot_ly(x = ~User, y = ~Status, type = 'bar', name = "Number of Users") %>%
+	layout(xaxis = list(title = '', type = 'log'),
+	   yaxis = list(title = '' ),
+	   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+Row {.tabset data-height=1600}
+-------------------------------------------------------------------------
+
+### Usage by PI's Department
+
+```{r annualrep_pideptusage_sus}
+plot_ly(pideptusage, x = ~Total, y = ~reorder(PIDept, Total), type = "bar",
+	name = "Usage by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Jobs by PI's Department
+
+
+```{r annualrep_pideptusage_jobs}
+plot_ly(pideptusage, x = ~Jobs, y = ~reorder(PIDept, Total), type = "bar",
+	name = "Jobs by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Users by PI's Department
+
+
+```{r annualrep_pideptusage_users}
+plot_ly(pideptusage, x = ~User, y = ~reorder(PIDept, Total), type = "bar",
+	name = "Users by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+	
+### Usage by Users Major/Department
+
+```{r annualrep_userdeptusage_sus}
+plot_ly(userdeptusage, x = ~Total, y = ~reorder(Department, Total), type = "bar",
+	name = "Usage by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Jobs by  Users Major/Department
+
+
+```{r annualrep_userdeptusage_jobs}
+plot_ly(userdeptusage, x = ~Jobs, y = ~reorder(Department, Total), type = "bar",
+	name = "Jobs by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Users by  Users Major/Department
+
+
+```{r annualrep_userdeptusage_users}
+plot_ly(userdeptusage, x = ~User, y = ~reorder(Department, Total), type = "bar",
+	name = "Users by PI" , orientation = 'h') %>%
+	layout(xaxis = list(title = '', type = 'log' ),
+	  yaxis = list(title = "" ),
+	  margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+	
 AY 2016-17 {data-navmenu="Annual Reports"}
 =====================================================================
 
@@ -1262,7 +2042,6 @@ valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
 valueBox(n_distinct(dept$Department), icon = "fa-university")
 ```
 
-
 ### Jobs Run
 
 ```{r ay1617_jobs}
@@ -1331,11 +2110,16 @@ monthlyreport1617 %>%
 ### Monthly Energy Consumption
 
 ```{r ay1617_monthly_power}
+averagepower1617 <- monthlypower1617 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
 monthlypower1617 %>% 
   group_by(Month) %>%
   summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
   plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
-    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ))
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2017-06-01"), x1=as.Date("2017-09-01"),
+      y0= mean(averagepower1617$Energy), y1= mean(averagepower1617$Energy), line=list(width=2, color = "green")))
+    )
 ```
 
 Row 
@@ -1551,11 +2335,16 @@ monthlyreport1718 %>%
 ### Monthly Energy Consumption
 
 ```{r ay1718_monthly_power}
+averagepower1718 <- monthlypower1718 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
 monthlypower1718 %>% 
   group_by(Month) %>%
   summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
   plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
-    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ))
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2017-10-01"), x1=as.Date("2018-09-01"),
+      y0= mean(averagepower1718$Energy), y1= mean(averagepower1718$Energy), line=list(width=2, color = "green")))
+    )
 ```
 
 Row 
@@ -1773,11 +2562,16 @@ monthlyreport1819 %>%
 ### Monthly Energy Consumption
 
 ```{r ay1819_monthly_power}
+averagepower1819 <- monthlypower1819 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
 monthlypower1819 %>% 
   group_by(Month) %>%
   summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
   plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
-    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ))
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2018-10-01"), x1=as.Date("2019-09-01"),
+      y0= mean(averagepower1819$Energy), y1= mean(averagepower1819$Energy), line=list(width=2, color = "green")))
+    )
 ```
 
 Row 
@@ -1996,11 +2790,16 @@ monthlyreport1920 %>%
 ### Monthly Energy Consumption
 
 ```{r ay1920_monthly_power}
+averagepower1920 <- monthlypower1920 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
 monthlypower1920 %>% 
   group_by(Month) %>%
   summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
   plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
-    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ))
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+     shapes=list(list(type='line',
+      x0=as.Date("2019-10-01"), x1=as.Date("2020-09-01"),
+      y0= mean(averagepower1920$Energy), y1= mean(averagepower1920$Energy), line=list(width=2, color = "green")))
+    )
 ```
 
 Row 
@@ -2073,6 +2872,922 @@ plot_ly(userusage1920, x = ~Total, y = ~Status, type = "bar", name = "PI Usage R
 
 ```{r ay1920_users_status_num}
 plot_ly(userusage1920, values = ~User, labels = ~Status, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+
+
+AY 2020-21 {data-navmenu="Annual Reports"}
+=====================================================================
+
+Row
+-----------------------------------------------------------------------
+
+```{r ay2021_monthly_setup}
+monthlyreport2021 <- monthly2021 %>% 
+  group_by(Month) %>%	
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+pireport2021 <- monthly2021 %>% 
+  group_by(PI) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ)))) 
+
+pideptreport2021 <- monthly2021 %>% 
+  group_by(PIDept) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+deptreport2021 <- monthly2021 %>% 
+  group_by(Department) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+userusage2021 <- monthly2021 %>% 
+  group_by(Status) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+users <- monthly2021 %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+
+pis <- monthly2021 %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+pidept <- monthly2021 %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+
+dept <- monthly2021 %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+
+months_sofar <- length(monthlyreport2021$Month)
+
+forttotal <- sum(pis$Total)
+fortusage <- round(forttotal/(sum(ay2021su[1:months_sofar]))*100)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r ay2021_users}
+valueBox(n_distinct(users$Name), icon = "fa-users")
+```
+
+### Active PIs
+
+```{r ay2021_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md")
+```
+
+### PI Departments
+
+```{r ay2021_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
+```
+
+### Users Major/Department
+
+```{r ay2021_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university")
+```
+
+
+### Jobs Run
+
+```{r ay2021_jobs}
+valueBox(fortjobs, icon = "fa-desktop")
+```
+
+### % of SUs consumed
+
+```{r ay2021_sus}
+gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
+success = c(71, 100), warning = c(50, 70), danger = c(0, 49)
+))
+```
+
+Row {.tabset}
+--------------------------------
+
+### Top 10 Users by SUs consumed
+
+```{r ay2021_users_sus}
+monthly2021 %>% topuserstotal 
+```
+
+
+### Top 10 Users by Jobs 
+
+```{r ay2021_users_jobs}
+monthly2021 %>% topusersjobs
+```
+
+
+Row {.tabset}
+----------------------------------------------------------------------
+
+### Monthly Usage
+
+
+```{r ay2021_monthly_usage}
+monthlyreport2021 %>% 
+  mutate(Available=ay2021su[1:months_sofar],Unused=Available-Total,Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Total, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### Usage Percentage
+
+```{r ay2021_monthly_usage_percent}
+usage2021 <- round(sum(monthlyreport2021$Total)/sum(ay2021su[1:months_sofar])*100,2)
+monthlyreport2021 %>% 
+  mutate(Available=ay2021su[1:months_sofar],
+     Unused=round((Available-Total)/Available*100,2),
+     Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Percent, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack',
+      shapes=list(list(type='line', 
+      x0=as.Date("2020-10-01"), x1=as.Date("2021-09-01"), 
+      y0= usage2021, y1= usage2021, line=list(width=2, color = "green")),
+      list(type='line', 
+      x0=as.Date("2020-10-01"), x1=as.Date("2021-09-01"), 
+      y0= 80, y1= 80, line=list(width=2, color = "red")))
+    )
+```
+
+### Monthly Energy Consumption
+
+```{r ay2021_monthly_power}
+averagepower2021 <- monthlypower2021 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
+monthlypower2021 %>% 
+  group_by(Month) %>%
+  summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
+  plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2020-10-01"), x1=as.Date("2021-09-01"),
+      y0= mean(averagepower2021$Energy), y1= mean(averagepower2021$Energy), line=list(width=2, color = "green")))
+    )
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by PI
+
+```{r ay2021_pis_sus}
+plot_ly(pireport2021, x = ~Total, y = ~reorder(PI, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By PI
+
+```{r ay2021_pis_users}
+plot_ly(pireport2021, values = ~User, labels = ~PI, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Department
+
+```{r ay2021_pidept_sus}
+plot_ly(pideptreport2021, x = ~Total, y = ~reorder(PIDept, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department
+
+```{r ay2021_pidept_users}
+plot_ly(pideptreport2021, values = ~User, labels = ~PIDept, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Users Department/Major
+
+```{r ay2021_userdept_sus}
+plot_ly(deptreport2021, x = ~Total, y = ~reorder(Department, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department/Major
+
+```{r ay2021_userdept_users}
+plot_ly(deptreport2021, values = ~User, labels = ~Department, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+Row
+----------------------------------------------------------------------
+
+### SUs Consumed by Status
+
+```{r ay2021_users_status_sus}
+plot_ly(userusage2021, x = ~Total, y = ~Status, type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = ' ', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Status
+
+```{r ay2021_users_status_num}
+plot_ly(userusage2021, values = ~User, labels = ~Status, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+
+CY 2021 {data-navmenu="Annual Reports"}
+=====================================================================
+
+Row
+-----------------------------------------------------------------------
+
+```{r cy2021_monthly_setup}
+monthlyreport2021 <- monthly_2021 %>% 
+  group_by(Month) %>%	
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+pireport2021 <- monthly_2021 %>% 
+  group_by(PI) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ)))) 
+
+pideptreport2021 <- monthly_2021 %>% 
+  group_by(PIDept) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+deptreport2021 <- monthly_2021 %>% 
+  group_by(Department) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+userusage2021 <- monthly_2021 %>% 
+  group_by(Status) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+users <- monthly_2021 %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+
+pis <- monthly_2021 %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+pidept <- monthly_2021 %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+
+dept <- monthly_2021 %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+
+months_sofar <- length(monthlyreport2021$Month)
+
+forttotal <- sum(pis$Total)
+fortusage <- round(forttotal/(sum(cy2021su[1:months_sofar]))*100)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r cy2021_users}
+valueBox(n_distinct(users$Name), icon = "fa-users")
+```
+
+### Active PIs
+
+```{r cy2021_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md")
+```
+
+### PI Departments
+
+```{r cy2021_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
+```
+
+### Users Major/Department
+
+```{r cy2021_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university")
+```
+
+
+### Jobs Run
+
+```{r cy2021_jobs}
+valueBox(fortjobs, icon = "fa-desktop")
+```
+
+### % of SUs consumed
+
+```{r cy2021_sus}
+gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
+success = c(71, 100), warning = c(50, 70), danger = c(0, 49)
+))
+```
+
+Row {.tabset}
+--------------------------------
+
+### Top 10 Users by SUs consumed
+
+```{r cy2021_users_sus}
+monthly_2021 %>% topuserstotal 
+```
+
+
+### Top 10 Users by Jobs 
+
+```{r cy2021_users_jobs}
+monthly_2021 %>% topusersjobs
+```
+
+
+Row {.tabset}
+----------------------------------------------------------------------
+
+### Monthly Usage
+
+
+```{r cy2021_monthly_usage}
+monthlyreport2021 %>% 
+  mutate(Available=cy2021su[1:months_sofar],Unused=Available-Total,Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Total, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### Usage Percentage
+
+```{r cy2021_monthly_usage_percent}
+usage2021 <- round(sum(monthlyreport2021$Total)/sum(cy2021su[1:months_sofar])*100,2)
+monthlyreport2021 %>% 
+  mutate(Available=cy2021su[1:months_sofar],
+     Unused=round((Available-Total)/Available*100,2),
+     Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Percent, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack'
+      , shapes=list(list(type='line', 
+      x0=as.Date("2021-01-01"), x1=min(Sys.Date(),as.Date("2021-10-31")), 
+      y0= usage2021, y1= usage2021, line=list(width=2, color = "green"))
+      ,list(type='line', 
+      x0=as.Date("2021-01-01"), x1=min(Sys.Date(),as.Date("2021-12-31")),
+      y0= 80, y1= 80, line=list(width=2, color = "red"))
+    )
+    )
+```
+
+### Monthly Energy Consumption
+
+```{r cy2021_monthly_power}
+averagepower2021 <- monthlypower %>% cy2021filter %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
+monthlypower %>% cy2021filter %>%
+  group_by(Month) %>%
+  summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
+  plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2021-01-01"), x1=min(Sys.Date(),as.Date("2021-12-31")),
+      y0= mean(averagepower2021$Energy), y1= mean(averagepower2021$Energy), line=list(width=2, color = "green")))
+    )
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by PI
+
+```{r cy2021_pis_sus}
+plot_ly(pireport2021, x = ~Total, y = ~reorder(PI, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By PI
+
+```{r cy2021_pis_users}
+plot_ly(pireport2021, values = ~User, labels = ~PI, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Department
+
+```{r cy2021_pidept_sus}
+plot_ly(pideptreport2021, x = ~Total, y = ~reorder(PIDept, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department
+
+```{r cy2021_pidept_users}
+plot_ly(pideptreport2021, values = ~User, labels = ~PIDept, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Users Department/Major
+
+```{r cy2021_userdept_sus}
+plot_ly(deptreport2021, x = ~Total, y = ~reorder(Department, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department/Major
+
+```{r cy2021_userdept_users}
+plot_ly(deptreport2021, values = ~User, labels = ~Department, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+Row
+----------------------------------------------------------------------
+
+### SUs Consumed by Status
+
+```{r cy2021_users_status_sus}
+plot_ly(userusage2021, x = ~Total, y = ~Status, type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = ' ', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Status
+
+```{r cy2021_users_status_num}
+plot_ly(userusage2021, values = ~User, labels = ~Status, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+
+AY 2021-22 {data-navmenu="Annual Reports"}
+=====================================================================
+
+Row
+-----------------------------------------------------------------------
+
+```{r ay2122_monthly_setup}
+monthlyreport2122 <- monthly2122 %>% 
+  group_by(Month) %>%	
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+pireport2122 <- monthly2122 %>% 
+  group_by(PI) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ)))) 
+
+pideptreport2122 <- monthly2122 %>% 
+  group_by(PIDept) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+deptreport2122 <- monthly2122 %>% 
+  group_by(Department) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+userusage2122 <- monthly2122 %>% 
+  group_by(Status) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+users <- monthly2122 %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+
+pis <- monthly2122 %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+pidept <- monthly2122 %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+
+dept <- monthly2122 %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+
+months_sofar <- length(monthlyreport2122$Month)
+
+forttotal <- sum(pis$Total)
+fortusage <- round(forttotal/(sum(ay2122su[1:months_sofar]))*100)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r ay2122_users}
+valueBox(n_distinct(users$Name), icon = "fa-users")
+```
+
+### Active PIs
+
+```{r ay2122_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md")
+```
+
+### PI Departments
+
+```{r ay2122_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
+```
+
+### Users Major/Department
+
+```{r ay2122_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university")
+```
+
+
+### Jobs Run
+
+```{r ay2122_jobs}
+valueBox(fortjobs, icon = "fa-desktop")
+```
+
+### % of SUs consumed
+
+```{r ay2122_sus}
+gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
+success = c(71, 100), warning = c(50, 70), danger = c(0, 49)
+))
+```
+
+Row {.tabset}
+--------------------------------
+
+### Top 10 Users by SUs consumed
+
+```{r ay2122_users_sus}
+monthly2122 %>% topuserstotal 
+```
+
+
+### Top 10 Users by Jobs 
+
+```{r ay2122_users_jobs}
+monthly2122 %>% topusersjobs
+```
+
+
+Row {.tabset}
+----------------------------------------------------------------------
+
+### Monthly Usage
+
+
+```{r ay2122_monthly_usage}
+monthlyreport2122 %>% 
+  mutate(Available=ay2122su[1:months_sofar],Unused=Available-Total,Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Total, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### Usage Percentage
+
+```{r ay2122_monthly_usage_percent}
+usage2122 <- round(sum(monthlyreport2122$Total)/sum(ay2122su[1:months_sofar])*100,2)
+monthlyreport2122 %>% 
+  mutate(Available=ay2122su[1:months_sofar],
+     Unused=round((Available-Total)/Available*100,2),
+     Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Percent, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack'
+      , shapes=list(list(type='line', 
+      x0=as.Date("2021-10-01"), x1=min(Sys.Date(),as.Date("2022-09-01")), 
+      y0= usage2122, y1= usage2122, line=list(width=2, color = "green"))
+      ,list(type='line', 
+      x0=as.Date("2021-10-01"), x1=min(Sys.Date(),as.Date("2022-09-01")),
+      y0= 80, y1= 80, line=list(width=2, color = "red"))
+    )
+    )
+```
+
+### Monthly Energy Consumption
+
+```{r ay2122_monthly_power}
+averagepower2122 <- monthlypower2122 %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
+monthlypower2122 %>% 
+  group_by(Month) %>%
+  summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
+  plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2021-10-01"), x1=min(Sys.Date(),as.Date("2022-09-01")),
+      y0= mean(averagepower2122$Energy), y1= mean(averagepower2122$Energy), line=list(width=2, color = "green")))
+    )
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by PI
+
+```{r ay2122_pis_sus}
+plot_ly(pireport2122, x = ~Total, y = ~reorder(PI, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By PI
+
+```{r ay2122_pis_users}
+plot_ly(pireport2122, values = ~User, labels = ~PI, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Department
+
+```{r ay2122_pidept_sus}
+plot_ly(pideptreport2122, x = ~Total, y = ~reorder(PIDept, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department
+
+```{r ay2122_pidept_users}
+plot_ly(pideptreport2122, values = ~User, labels = ~PIDept, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Users Department/Major
+
+```{r ay2122_userdept_sus}
+plot_ly(deptreport2122, x = ~Total, y = ~reorder(Department, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department/Major
+
+```{r ay2122_userdept_users}
+plot_ly(deptreport2122, values = ~User, labels = ~Department, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+Row
+----------------------------------------------------------------------
+
+### SUs Consumed by Status
+
+```{r ay2122_users_status_sus}
+plot_ly(userusage2122, x = ~Total, y = ~Status, type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = ' ', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Status
+
+```{r ay2122_users_status_num}
+plot_ly(userusage2122, values = ~User, labels = ~Status, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+
+CY 2022 {data-navmenu="Annual Reports"}
+=====================================================================
+
+Row
+-----------------------------------------------------------------------
+
+```{r cy2022_monthly_setup}
+monthlyreport2022 <- monthly_2022 %>% 
+  group_by(Month) %>%	
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+pireport2022 <- monthly_2022 %>% 
+  group_by(PI) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ)))) 
+
+pideptreport2022 <- monthly_2022 %>% 
+  group_by(PIDept) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+deptreport2022 <- monthly_2022 %>% 
+  group_by(Department) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+userusage2022 <- monthly_2022 %>% 
+  group_by(Status) %>% 
+  summarize(Total=round(sum(as.double(Total)),2),User=n_distinct(Name),Jobs=round(sum(as.double(TotalJ))))
+
+users <- monthly_2022 %>%
+  group_by(Name) %>%
+  summarize(Total=sum(as.double(Total)))
+
+pis <- monthly_2022 %>%
+  group_by(PI) %>%
+  summarize(Total=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+pidept <- monthly_2022 %>%
+  group_by(PIDept) %>%
+  summarize(Total=sum(as.double(Total)))
+
+dept <- monthly_2022 %>%
+  group_by(Department) %>%
+  summarize(Total=sum(as.double(Total)))
+
+months_sofar <- length(monthlyreport2022$Month)
+
+forttotal <- sum(pis$Total)
+fortusage <- round(forttotal/(sum(cy2022su[1:months_sofar]))*100)
+fortjobs <- sum(pis$Jobs)
+```
+
+### Active Users
+
+```{r cy2022_users}
+valueBox(n_distinct(users$Name), icon = "fa-users")
+```
+
+### Active PIs
+
+```{r cy2022_pis}
+valueBox(n_distinct(pis$PI), icon = "fa-user-md")
+```
+
+### PI Departments
+
+```{r cy2022_pidept}
+valueBox(n_distinct(pidept$PIDept), icon = "fa-building")
+```
+
+### Users Major/Department
+
+```{r cy2022_userdept}
+valueBox(n_distinct(dept$Department), icon = "fa-university")
+```
+
+
+### Jobs Run
+
+```{r cy2022_jobs}
+valueBox(fortjobs, icon = "fa-desktop")
+```
+
+### % of SUs consumed
+
+```{r cy2022_sus}
+gauge(fortusage, min = 0, max = 100, symbol = '%', gaugeSectors(
+success = c(71, 100), warning = c(50, 70), danger = c(0, 49)
+))
+```
+
+Row {.tabset}
+--------------------------------
+
+### Top 10 Users by SUs consumed
+
+```{r cy2022_users_sus}
+monthly_2022 %>% topuserstotal 
+```
+
+
+### Top 10 Users by Jobs 
+
+```{r cy2022_users_jobs}
+monthly_2022 %>% topusersjobs
+```
+
+
+Row {.tabset}
+----------------------------------------------------------------------
+
+### Monthly Usage
+
+
+```{r cy2022_monthly_usage}
+monthlyreport2022 %>% 
+  mutate(Available=cy2022su[1:months_sofar],Unused=Available-Total,Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Total, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### Usage Percentage
+
+```{r cy2022_monthly_usage_percent}
+usage2022 <- round(sum(monthlyreport2022$Total)/sum(cy2022su[1:months_sofar])*100,2)
+monthlyreport2022 %>% 
+  mutate(Available=cy2022su[1:months_sofar],
+     Unused=round((Available-Total)/Available*100,2),
+     Percent=round(Total/Available*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Percent, type = "bar", name = "Consumed" ) %>%
+    add_trace(y =  ~ Unused, name = "Unused") %>%
+    layout(yaxis = list(title = 'SUs Consumed' ), xaxis = list(title = 'Month' ), barmode = 'stack'
+      , shapes=list(list(type='line', 
+      x0=as.Date("2022-01-01"), x1=min(Sys.Date(),as.Date("2022-12-31")), 
+      y0= usage2022, y1= usage2022, line=list(width=2, color = "green"))
+      ,list(type='line', 
+      x0=as.Date("2022-01-01"), x1=min(Sys.Date(),as.Date("2022-12-31")),
+      y0= 80, y1= 80, line=list(width=2, color = "red"))
+    )
+    )
+```
+
+### Monthly Energy Consumption
+
+```{r cy2022_monthly_power}
+averagepower2022 <- monthlypower %>% cy2022filter %>% group_by(Month) %>% summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2))
+monthlypower %>% cy2022filter %>%
+  group_by(Month) %>%
+  summarize(Power=round(sum(Power)/1000,2),Energy=round(sum(Energy)/1000,2)) %>%
+  plot_ly(x = ~Month, y = ~Energy, type = "bar", name = "Energy Consumption" ) %>%
+    layout(yaxis = list(title = 'Energy Consumed (MWh)' ), xaxis = list(title = 'Month' ),
+      shapes=list(list(type='line',
+      x0=as.Date("2022-01-01"), x1=min(Sys.Date(),as.Date("2022-12-31")),
+      y0= mean(averagepower2022$Energy), y1= mean(averagepower2022$Energy), line=list(width=2, color = "green")))
+    )
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by PI
+
+```{r cy2022_pis_sus}
+plot_ly(pireport2022, x = ~Total, y = ~reorder(PI, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By PI
+
+```{r cy2022_pis_users}
+plot_ly(pireport2022, values = ~User, labels = ~PI, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Department
+
+```{r cy2022_pidept_sus}
+plot_ly(pideptreport2022, x = ~Total, y = ~reorder(PIDept, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+     yaxis = list(title = '' ),
+     margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department
+
+```{r cy2022_pidept_users}
+plot_ly(pideptreport2022, values = ~User, labels = ~PIDept, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F)
+```
+
+Row 
+----------------------------------------------------------------------
+
+### SUs Consumed by Users Department/Major
+
+```{r cy2022_userdept_sus}
+plot_ly(deptreport2022, x = ~Total, y = ~reorder(Department, Total), type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = '', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Department/Major
+
+```{r cy2022_userdept_users}
+plot_ly(deptreport2022, values = ~User, labels = ~Department, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
+```
+
+Row
+----------------------------------------------------------------------
+
+### SUs Consumed by Status
+
+```{r cy2022_users_status_sus}
+plot_ly(userusage2022, x = ~Total, y = ~Status, type = "bar", name = "PI Usage Report", orientation = 'h') %>%
+  layout(xaxis = list(title = ' ', type = 'log' ), 
+   yaxis = list(title = '' ),
+   margin = list(l = 200, r = 20, t = 25, b = 25))
+```
+
+### Active Users By Status
+
+```{r cy2022_users_status_num}
+plot_ly(userusage2022, values = ~User, labels = ~Status, type = "pie", textposition = 'inside', textinfo = 'label', showlegend = F) 
 ```
 
 
@@ -2161,7 +3876,7 @@ monthly %>%
     layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
 ```
 
-Row {.tabset}
+Row { data-height=1600}
 ----------------------------------------------------
 
 ### SUs Consumed
@@ -2179,21 +3894,6 @@ monthly %>%
     layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
 ``` 
 
-### Number of Jobs
-
-```{r summary_jobs_pi}
-monthly %>%
-  group_by(PI) %>%
-  summarize(SerialJ=sum(as.double(SerialJ)),
-    SingleJ=sum(as.double(SingleJ)),
-    MultiJ=sum(as.double(MultiJ)),
-    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
-  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
-    add_trace(x =  ~SingleJ, name = "SMP") %>%
-    add_trace(x =  ~MultiJ, name = "Multi") %>%
-    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
-``` 
-
 ### SUs Consumed by %
 
 ```{r summary_sus_pi_percent}
@@ -2208,6 +3908,24 @@ monthly %>%
     add_trace(x =  ~Single, name = "SMP") %>%
     add_trace(x =  ~Multi, name = "Multi") %>%
     layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+Row { data-height=1600}
+----------------------------------------------------
+
+### Number of Jobs
+
+```{r summary_jobs_pi}
+monthly %>%
+  group_by(PI) %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
 ``` 
 
 ### Number of Jobs by %
@@ -2844,6 +4562,323 @@ monthly %>%
 monthly %>%
   group_by(PI) %>%
   ay1920filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),
+    Total=sum(as.double(Total))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+```
+
+
+
+AY 2020-21 {data-navmenu="Job Types"}
+===========================================================
+
+
+Row
+-----------------------------------------------------------
+
+### Description
+
+There are three types of jobs that can be run on Sol
+
+*  __Single__: These are jobs that request only one compute core including GPU jobs.
+*  __SMP__: These are jobs that request only one node and more than one core. These could be symmetric multi threaded jobs and a bunch of __Single__ jobs run in parallel. These jobs do not utilize more than one node and do not use the infiniband fabric.
+* __Multi__: These are jobs that request more than one node. These are jobs are primarily distributed parallel or mpi jobs that make use of the infiniband fabric. These jobs also include __Single__ or __SMP__ jobs that are distributed across the requested nodes and/or compute cores that do not use the infiniband fabric.
+
+ 
+Row {.tabset}
+-----------------------------------------------------------
+
+### SUs Consumed 
+
+```{r ay2021_sus_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs
+
+```{r ay2021_jobs_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### SUs Consumed by %
+
+```{r ay2021_sus_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs by %
+
+```{r ay2021_jobs_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+Row {.tabset}
+----------------------------------------------------
+
+### SUs Consumed
+
+```{r ay2021_pi_sus_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs
+
+```{r ay2021_pi_jobs_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### SUs Consumed by %
+
+```{r ay2021_pi_sus_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs by %
+
+```{r ay2021_pi_jobs_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),
+    Total=sum(as.double(Total))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+```
+
+
+AY 2021-22 {data-navmenu="Job Types"}
+===========================================================
+
+
+Row
+-----------------------------------------------------------
+
+### Description
+
+There are three types of jobs that can be run on Sol
+
+*  __Single__: These are jobs that request only one compute core including GPU jobs.
+*  __SMP__: These are jobs that request only one node and more than one core. These could be symmetric multi threaded jobs and a bunch of __Single__ jobs run in parallel. These jobs do not utilize more than one node and do not use the infiniband fabric.
+* __Multi__: These are jobs that request more than one node. These are jobs are primarily distributed parallel or mpi jobs that make use of the infiniband fabric. These jobs also include __Single__ or __SMP__ jobs that are distributed across the requested nodes and/or compute cores that do not use the infiniband fabric.
+
+ 
+Row {.tabset}
+-----------------------------------------------------------
+
+### SUs Consumed 
+
+```{r ay2122_sus_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2122filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs
+
+```{r ay2122_jobs_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2122filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### SUs Consumed by %
+
+```{r ay2122_sus_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2122filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs by %
+
+```{r ay2122_jobs_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  ay2122filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+Row {.tabset}
+----------------------------------------------------
+
+### SUs Consumed
+
+```{r ay2122_pi_sus_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2122filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs
+
+```{r ay2122_pi_jobs_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2122filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### SUs Consumed by %
+
+```{r ay2122_pi_sus_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2122filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs by %
+
+```{r ay2122_pi_jobs_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  ay2122filter %>%
   summarize(SerialJ=sum(as.double(SerialJ)),
     SingleJ=sum(as.double(SingleJ)),
     MultiJ=sum(as.double(MultiJ)),
@@ -3642,6 +5677,330 @@ monthly %>%
     add_trace(x =  ~MultiJ, name = "Multi") %>%
     layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
 ``` 
+ 
+
+ 
+
+CY 2021 {data-navmenu="Job Types"}
+===========================================================
+
+
+Row
+-----------------------------------------------------------
+
+### Description
+
+There are three types of jobs that can be run on Sol
+
+*  __Single__: These are jobs that request only one compute core including GPU jobs.
+*  __SMP__: These are jobs that request only one node and more than one core. These could be symmetric multi threaded jobs and a bunch of __Single__ jobs run in parallel. These jobs do not utilize more than one node and do not use the infiniband fabric.
+* __Multi__: These are jobs that request more than one node. These are jobs are primarily distributed parallel or mpi jobs that make use of the infiniband fabric. These jobs also include __Single__ or __SMP__ jobs that are distributed across the requested nodes and/or compute cores that do not use the infiniband fabric.
+
+ 
+Row {.tabset}
+-----------------------------------------------------------
+
+### SUs Consumed 
+
+```{r cy2021_sus_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs
+
+```{r cy2021_jobs_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### SUs Consumed by %
+
+```{r cy2021_sus_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs by %
+
+```{r cy2021_jobs_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+Row {.tabset data-height=1600}
+----------------------------------------------------
+
+### SUs Consumed
+
+```{r cy2021_pi_sus_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+
+### Number of Jobs
+
+```{r cy2021_pi_jobs_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+
+### SUs Consumed by %
+
+```{r cy2021_pi_sus_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2021filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+
+### Number of Jobs by %
+
+```{r cy2021_pi_jobs_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2021filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),
+    Total=sum(as.double(Total))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+
+
+CY 2022 {data-navmenu="Job Types"}
+===========================================================
+
+
+Row
+-----------------------------------------------------------
+
+### Description
+
+There are three types of jobs that can be run on Sol
+
+*  __Single__: These are jobs that request only one compute core including GPU jobs.
+*  __SMP__: These are jobs that request only one node and more than one core. These could be symmetric multi threaded jobs and a bunch of __Single__ jobs run in parallel. These jobs do not utilize more than one node and do not use the infiniband fabric.
+* __Multi__: These are jobs that request more than one node. These are jobs are primarily distributed parallel or mpi jobs that make use of the infiniband fabric. These jobs also include __Single__ or __SMP__ jobs that are distributed across the requested nodes and/or compute cores that do not use the infiniband fabric.
+
+ 
+Row {.tabset}
+----------------------------------------------------
+
+### SUs Consumed 
+
+```{r cy2022_sus_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2022filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs
+
+```{r cy2022_jobs_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2022filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+### SUs Consumed by %
+
+```{r cy2022_sus_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2022filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Month, y = ~Serial, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~Single, name = "SMP") %>%
+    add_trace(y =  ~Multi, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+ 
+### Number of Jobs by %
+
+```{r cy2022_jobs_percent_jobtype}
+monthly %>%
+  group_by(Month) %>%
+  cy2022filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~Month, y = ~SerialJ, type = "bar", name = "Single" ) %>%
+    add_trace(y =  ~SingleJ, name = "SMP") %>%
+    add_trace(y =  ~MultiJ, name = "Multi") %>%
+    layout(yaxis = list(title = ' ' ), xaxis = list(title = 'Month' ), barmode = 'stack')
+```
+
+Row {.tabset data-height=1600}
+----------------------------------------------------
+
+### SUs Consumed
+
+```{r cy2022_pi_sus_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2022filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs
+
+```{r cy2022_pi_jobs_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2022filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),Total=sum(as.double(Total))) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '', type = 'log' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### SUs Consumed by %
+
+```{r cy2022_pi_sus_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2022filter %>%
+  summarize(Serial=sum(as.double(Serial)),
+    Single=sum(as.double(Single)),
+    Multi=sum(as.double(Multi)),
+    Total=sum(as.double(Total))) %>%
+  mutate(Serial=round(Serial/Total*100,2),Single=round(Single/Total*100,2),Multi=round(Multi/Total*100,2)) %>%
+  plot_ly(x = ~Serial, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~Single, name = "SMP") %>%
+    add_trace(x =  ~Multi, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+
+### Number of Jobs by %
+
+```{r cy2022_pi_jobs_percent_jobtype}
+monthly %>%
+  group_by(PI) %>%
+  cy2022filter %>%
+  summarize(SerialJ=sum(as.double(SerialJ)),
+    SingleJ=sum(as.double(SingleJ)),
+    MultiJ=sum(as.double(MultiJ)),
+    TotalJ=sum(as.double(TotalJ)),
+    Total=sum(as.double(Total))) %>%
+  mutate(SerialJ=round(SerialJ/TotalJ*100,2),SingleJ=round(SingleJ/TotalJ*100,2),MultiJ=round(MultiJ/TotalJ*100,2)) %>%
+  plot_ly(x = ~SerialJ, y = ~reorder(PI,Total), type = "bar", name = "Single",  orientation = 'h' ) %>%
+    add_trace(x =  ~SingleJ, name = "SMP") %>%
+    add_trace(x =  ~MultiJ, name = "Multi") %>%
+    layout(xaxis = list(title = '' ), yaxis = list(title = '' ), barmode = 'stack', margin = list(l = 200, r = 20, t = 25, b = 25) )
+``` 
+ 
+
  
 
  

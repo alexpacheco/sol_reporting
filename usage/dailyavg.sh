@@ -16,8 +16,8 @@ state="COMPLETED,CANCELLED,FAILED,TIMEOUT"
 start=$(date -d "$first day ago" +%Y-%m-%d-00:00:00)
 end=$(date -d "$third day ago" +%Y-%m-%d-23:59:59)
 
-cores=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080 | awk '{s+=$1}END{print s+36}')
-dailysu=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080 | awk '{s+=$1}END{print (s+36)*24}')
+cores=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem | awk '{s+=$1}END{print s+36}')
+dailysu=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem | awk '{s+=$1}END{print (s+36)*24}')
 ltssu=$(sinfo -N --Format=cpus -p lts | awk '{s+=$1}END{print s*24}')
 im1080su=$(sinfo -N --Format=cpus -p imlab,imlab-hold,im1080 | awk '{s+=$1}END{print s*24}')
 engsu=$(sinfo -N --Format=cpus -p eng | awk '{s+=$1}END{print s*24}')

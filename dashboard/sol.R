@@ -13,8 +13,16 @@ monthlywatts <- dailywatts %>% group_by(Month=floor_date(as.Date(Date), "month")
 
 monthlywatts %>% write_csv("monthlypower.csv")
 
-dailywatts %>% filter(Date >= as.Date("2019-10-01")) %>% write_csv("dailypower1920.csv")
-monthlywatts %>% filter(Month >= as.Date("2019-10-01")) %>% write_csv("monthlypower1920.csv")
+#dailywatts %>% filter(Date >= as.Date("2017-10-01") & Date < as.Date("2018-10-01")) %>% write_csv("dailypower1718.csv")
+#monthlywatts %>% filter(Month >= as.Date("2017-10-01") & Month < as.Date("2018-10-01") ) %>% write_csv("monthlypower1718.csv")
+#dailywatts %>% filter(Date >= as.Date("2018-10-01") & Date < as.Date("2019-10-01")) %>% write_csv("dailypower1819.csv")
+#monthlywatts %>% filter(Month >= as.Date("2018-10-01") & Month < as.Date("2019-10-01") ) %>% write_csv("monthlypower1819.csv")
+#dailywatts %>% filter(Date >= as.Date("2019-10-01") & Date < as.Date("2020-10-01")) %>% write_csv("dailypower1920.csv")
+#monthlywatts %>% filter(Month >= as.Date("2019-10-01") & Month < as.Date("2020-10-01") ) %>% write_csv("monthlypower1920.csv")
+#dailywatts %>% filter(Date >= as.Date("2020-10-01") & Date < as.Date("2021-10-01")) %>% write_csv("dailypower2021.csv")
+#monthlywatts %>% filter(Month >= as.Date("2020-10-01") & Month < as.Date("2021-10-01")) %>% write_csv("monthlypower2021.csv")
+dailywatts %>% filter(Date >= as.Date("2021-10-01") & Date < as.Date("2022-10-01")) %>% write_csv("dailypower2122.csv")
+monthlywatts %>% filter(Month >= as.Date("2021-10-01") & Month < as.Date("2022-10-01")) %>% write_csv("monthlypower2122.csv")
 
 
 

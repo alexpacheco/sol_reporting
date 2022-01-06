@@ -8,6 +8,8 @@ summary <- function(data) {
     RunTime=round(difftime(End,Start,units="mins"),2),
     SUTime=round(as.numeric(difftime(End,Start,units="hours"))*NCPUS,2)
   ) %>% 
+  mutate_at(c("WaitTime","RunTime"), str_replace, " mins", "") %>%
+  mutate_at(c("SUTime"), str_replace, " hours", "") %>%
   summarize(
     SU=round(sum(as.numeric(SUTime)),2),
     Jobs=n(),
@@ -41,13 +43,14 @@ monthly_usage <- function(data,first,last) {
   mutate(`Wait Time (min)`=round(difftime(Start,Submit,units="mins"),2),
     `Run Time (min)`=round(difftime(End,Start,units="mins"),2),
     `SUs Consumed` =  round(difftime(End,Start,units="hour")*NCPUS,2)) %>%
-  select(-c(Start,Submit,End,X14)) %>%
+  select(c(JobID:Timelimit,`Wait Time (min)`:`SUs Consumed`)) %>% 
   datatable(filter = 'top',
     options = list(
       dom = 'lptip', pageLength = 25, lengthMenu = c(25, 50, 100, 250, 500)
     )
   )
 }
+  #select(-c(Start,Submit,End,X14)) %>%
 
 # Filters for serial, smp and dmp jobs
 serial_filter <- function(data) {
@@ -69,6 +72,7 @@ my_table <- function(data) {
   datatable(
     rownames = FALSE,
     options = list(
+      autoWidth = FALSE,
       pageLength = 25,
       order = list(list(1, 'desc'))
     )
@@ -81,6 +85,7 @@ my_longtable <- function(data){
     filter = 'top',
     rownames = FALSE,
     options = list(
+      autoWidth = FALSE,
       pageLength = 50, lengthMenu = c(50,100,150,200,250),
       order = list(list(1, 'desc'))
     )

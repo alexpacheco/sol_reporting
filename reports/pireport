@@ -32,19 +32,27 @@ do
   esac
 done
 
-ayold="_1819"
-ay="_1920"
-aystart="2019-10-01-00:00:00"
+ayold="_1920"
+ay="_2021"
+aystart="2020-10-01-00:00:00"
 
 echo "      PI              Usage             Limit      %Used"
 echo "--------------------------------------------------------"
 
 
+lucourses=$(echo bioe295_s1920 bios395_f1920 bsta001_f1920 me450_f1920 me450_s1920 )
 if [[ -z $invest ]]; then
-    accounts=$(sshare -o Account -n | awk '{print $1}' | egrep -i '1920|lts' | sed -e 's/_1920//g' -e 's/_s1920//g' | uniq )
-    for pi in $accounts
+    accounts=$(sshare -o Account -n | awk '{print $1}' | egrep -i '1920|lts' | egrep -v '_s1920' | sed -e 's/_1920//g' | uniq )
+    for pi in $accounts #bioe295_s1920 bios395_f1920 bsta001_f1920 me450_f1920 me450_s1920
     do
-	usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920,${pi}_f1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+        case $pi in
+          bios395_f1920 | bsta001_f1920 | me450_f1920)
+            usage=$(sacct -a -A ${pi} --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+            ;;
+          *)
+	    usage=$(sacct -a -A ${pi}${ayold},${pi}${ay},${pi}_s1920,${pi}_f1920 --state=$state --starttime=$aystart -X -o CPUTimeRAW | awk '{s+=$1}END{printf "%12.2f\n",s/60/60}')
+            ;;
+        esac
 	alloclimit=$(sshare -o Account,RawUsage,GrpTRESMins -A ${pi}${ay} -n | egrep -v "^\s+" | awk -F= '{print $2/60}')
     
 	if [[ "$alloclimit" -gt "0" ]]

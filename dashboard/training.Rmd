@@ -7,7 +7,6 @@ output:
       smart: false
 ---
 
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
 <script>
 $(document).ready(function() {
   $('.navbar').remove();
@@ -95,3 +94,13 @@ tmp2 <- Attendance %>% group_by('Academic Year'=AY) %>% summarize(Total=sum(Coun
 inner_join(tmp1,tmp2) %>% kable()
 ```
 
+###
+
+```{r}
+Attendance %>% group_by(Session) %>% summarize(Offered=n_distinct(Semester),Attendee=sum(Count),Unique=sum(n_distinct(Name))) %>% arrange(-Offered) %>%
+  mutate_if(is.character, str_replace_all, pattern = "Shell Basic", replacement = "Basic Shell Scripting") %>%
+  mutate_if(is.character, str_replace_all, pattern = "Shell Advanced", replacement = "Advanced Shell Scripting") %>%
+  mutate_if(is.character, str_replace_all, pattern = "Python OOP", replacement = "Python Object Oriented Programming") %>%
+  mutate_if(is.character, str_replace_all, pattern = "RDM", replacement = "Research Data Management") %>%
+  datatable(options = list(pageLength = 5, autoWidth = TRUE, dom='tip'), , rownames = FALSE)
+```

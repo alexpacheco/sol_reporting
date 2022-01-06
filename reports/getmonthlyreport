@@ -8,6 +8,6 @@ cd /tmp
 date=$(date -d "1 month ago" +"%B %Y")
 cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Sol usage stats for $date")" alex.pacheco@lehigh.edu sma310@lehigh.edu
 
-solreport -m 1 | sed -n '/UserID/,$p' | awk -F\; '{if ( $(NF-1) > 0 ){print $0}}' > $(date -d "1 month ago" +"%Y-%m.dat") 2>/dev/null
+#solreport -m 1 | sed -n '/UserID/,$p' | awk -F\; '{if ( $(NF-1) > 0 ){print $0}}' > $(date -d "1 month ago" +"%Y-%m.dat") 2>/dev/null
 
 

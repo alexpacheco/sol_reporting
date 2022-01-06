@@ -41,7 +41,7 @@ do
     recv=$(echo $pi"@lehigh.edu") 
   fi
   month=$(date -d "1 month ago" +"%b, %Y")
-  cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Sol usage summary for $month")" $recv alex.pacheco@lehigh.edu
+  cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Sol usage summary for $month")" alex.pacheco@lehigh.edu
   #cat tmp.$$ | mail -r alp514@lehigh.edu -s "$(echo -e "Sol usage summary for $month")" alex.pacheco@lehigh.edu
 done
 

@@ -134,6 +134,7 @@ fi
 echo "This Month" | awk '{printf "  %15s; ",$0}'
 echo "Last $last months" | awk '{printf " %15s;\n",$0}'
 
+export PATH=/share/Apps/compilers/opt/spack/linux-centos8-x86_64/gcc-8.3.1/openldap/2.4.49-jqsftva/bin:${PATH}
 for user in $userlist
 do
   usage=($(sshare -U -u $user -n | awk '{print $1,$5/60/60}'))
