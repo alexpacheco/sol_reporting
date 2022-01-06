@@ -39,6 +39,8 @@ library(plotly)
 # New partition  -> add 2 to seq_len
 data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(33)), fill = TRUE)
 data[is.na(data)] <- 0
+datagpu <- read.table('/home/alp514/usage/dailygpu.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(11)), fill = TRUE)
+datagpu[is.na(datagpu)] <- 0
 
 # read daily usage reports
 daily1617 <- read_delim('soldaily1617.csv', delim=";")
@@ -386,6 +388,34 @@ dateWindow = c(as.Date("2016-08-08"), today() - 1 )
 solmetric <- data$V2
 mydygraph(solmetric, "Total") %>% 
   dyRoller(rollPeriod = 30) %>% 
+  dyRangeSelector( dateWindow = dateWindow ) %>%
+  dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
+  dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-03-15", "42 nodes, 972 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-05-01", "55 nodes, 1284 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-11-15", "56 nodes, 1300 cores, 50 GPUs", labelLoc = "top") %>%
+  dyEvent("2017-12-01", "56 nodes, 1300 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-04-02", "63 nodes, 1552 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-08-31", "65 nodes, 1624 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-11-12", "66 nodes, 1648 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2018-12-01", "68 nodes, 1720 cores, 72 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-01-02", "80 nodes, 2152 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") 
+```
+
+### GPU Usage
+
+```{r}
+days <- length(datagpu$V1)
+d1 <- seq(as.POSIXct(datagpu[1,1]), by = "days", length = days)
+
+solmetric <- datagpu$V2 + datagpu$V4 + datagpu$V6 + datagpu$V8 + datagpu$V10
+dateWindow = c(as.Date("2017-01-19"), today() - 1 )
+mydygraph(solmetric, "Total") %>%
+  dyRoller(rollPeriod = 30) %>%
   dyRangeSelector( dateWindow = dateWindow ) %>%
   dyEvent("2016-10-01", "Sol launched with 34 nodes, 760 cores", labelLoc = "top") %>% 
   dyEvent("2017-01-19", "34 nodes, 760 cores, 50 GPUs", labelLoc = "top") %>%

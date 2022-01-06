@@ -7,7 +7,7 @@ export PATH=/share/Apps/R/conda/4.3.31/bin:$PATH
 cd /home/alp514/usage
 
 ./dailyaverage.sh 2
-#./dailygpu.sh 2
+./dailygpu.sh 2
 
 #gnuplot onepage.gnu
 
