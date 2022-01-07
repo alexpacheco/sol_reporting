@@ -31,4 +31,7 @@ ${GIT} commit -am "Updated Sol Metrics at ${COMMIT_TIMESTAMP}"
 
 ${GIT} push web master
 
+export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin/rclone/bin:$PATH
+rclone copy -P ~/usage dropbox:sol_reporting/usage
+
 

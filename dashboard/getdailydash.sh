@@ -22,4 +22,6 @@ fi
 scp -rp sol_value.jpg webapps:/srv/projects/hpc/
 scp -rp annual*html monthly*html total*html pidept*html user*html summary.html training.html cpu_gpu*.html *powerusage.html webapps:/srv/projects/hpc/public/
 
+export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin/rclone/bin:$PATH
+rclone copy -P ~/dashboard dropbox:sol_reporting/dashboard
 
