@@ -50,7 +50,7 @@ export PATH=/share/Apps/usr/bin:/usr/local/bin:${PATH}
 singularity exec /share/Apps/virtualapps/rstudio/rstudio-r402-base.sif R -e "rmarkdown::render('ay2122.Rmd'); rmarkdown::render('cy2022.Rmd')"
 scp -rp ay2122.html cy2022.html webapps:/srv/projects/hpc/monitor/
 
-export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin/rclone/bin:$PATH
+export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin:$PATH
 rclone copy -P ~/monitor dropbox:sol_reporting/monitor
 
 if [[ "$today" == "01" ]]; then
