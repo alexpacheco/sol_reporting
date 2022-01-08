@@ -2102,6 +2102,26 @@ monthly1617 %>% topuserstotal
 monthly1617 %>% topusersjobs
 ```
 
+### Usage
+
+```{r ay1617_usage_all}
+data_1617 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2016-10-01") & as.Date(V1) < as.Date("2017-10-01"))
+datagpu_1617 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2016-10-01") & as.Date(V1) < as.Date("2017-10-01"))
+data1617 <- full_join(data_1617,datagpu_1617)
+dayslice <- length(data1617$V1)
+d1 <- seq(as.POSIXct(data1617[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2016-10-01"), as.Date("2017-09-30") )
+
+dygraph( xts(cbind(data1617$V2,data1617$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
+```
 
 Row {.tabset}
 ----------------------------------------------------------------------
@@ -2325,6 +2345,27 @@ monthly1718 %>% topuserstotal
 
 ```{r ay1718_users_jobs}
 monthly1718 %>% topusersjobs
+```
+
+### Usage
+
+```{r ay1718_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2017-10-01") & as.Date(V1) < as.Date("2018-10-01"))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2017-10-01") & as.Date(V1) < as.Date("2018-10-01"))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2017-10-01"), as.Date("2018-09-30") )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
 ```
 
 
@@ -2554,6 +2595,27 @@ monthly1819 %>% topuserstotal
 monthly1819 %>% topusersjobs
 ```
 
+### Usage
+
+```{r ay1819_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2018-10-01") & as.Date(V1) < as.Date("2019-10-01"))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2018-10-01") & as.Date(V1) < as.Date("2019-10-01"))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2018-10-01"), as.Date("2019-09-30") )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
+```
+
 
 Row {.tabset}
 ----------------------------------------------------------------------
@@ -2780,6 +2842,27 @@ monthly1920 %>% topuserstotal
 
 ```{r ay1920_users_jobs}
 monthly1920 %>% topusersjobs
+```
+
+### Usage
+
+```{r ay1920_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2019-10-01") & as.Date(V1) < as.Date("2020-10-01"))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2019-10-01") & as.Date(V1) < as.Date("2020-10-01"))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2019-10-01"), as.Date("2020-09-30") )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
 ```
 
 
@@ -3011,6 +3094,27 @@ monthly2021 %>% topuserstotal
 monthly2021 %>% topusersjobs
 ```
 
+### Usage
+
+```{r ay2021_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2020-10-01") & as.Date(V1) < as.Date("2021-10-01"))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2020-10-01") & as.Date(V1) < as.Date("2021-10-01"))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2020-10-01"), as.Date("2021-09-30") )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
+```
+
 
 Row {.tabset}
 ----------------------------------------------------------------------
@@ -3237,6 +3341,27 @@ monthly_2021 %>% topuserstotal
 
 ```{r cy2021_users_jobs}
 monthly_2021 %>% topusersjobs
+```
+
+### Usage
+
+```{r cy2021_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2021-01-01") & as.Date(V1) < as.Date("2022-01-01"))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2021-01-01") & as.Date(V1) < as.Date("2022-01-01"))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2021-01-01"), as.Date("2021-12-31") )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
 ```
 
 
@@ -3468,6 +3593,27 @@ monthly2122 %>% topuserstotal
 monthly2122 %>% topusersjobs
 ```
 
+### Usage
+
+```{r ay2122_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2021-10-01") & as.Date(V1) < min(as.Date("2022-10-01"),today()))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2021-10-01") & as.Date(V1) < min(as.Date("2022-10-01"),today()))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2021-10-01"), min(as.Date("2022-09-30"),today()) )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
+```
+
 
 Row {.tabset}
 ----------------------------------------------------------------------
@@ -3695,6 +3841,27 @@ monthly_2022 %>% topuserstotal
 
 ```{r cy2022_users_jobs}
 monthly_2022 %>% topusersjobs
+```
+
+### Usage
+
+```{r cy2022_usage_all}
+data_1718 <- data %>% select(V1,V2) %>%
+	filter(as.Date(V1) >= as.Date("2022-01-01") & as.Date(V1) < min(as.Date("2023-01-01"),today()))
+datagpu_1718 <-  datagpu %>% mutate(V12=V2+V4+V6+V8+V10) %>% select(V1,V12) %>%
+	filter(as.Date(V1) >= as.Date("2022-01-01") & as.Date(V1) < min(as.Date("2023-01-01"),today()))
+data1718 <- full_join(data_1718,datagpu_1718)
+dayslice <- length(data1718$V1)
+d1 <- seq(as.POSIXct(data1718[1,1]), by = "days", length = dayslice)
+dateWindow = c(as.Date("2022-01-01"), min(as.Date("2022-12-31"),today()) )
+
+dygraph( xts(cbind(data1718$V2,data1718$V12), order.by = d1)) %>%
+	dySeries("V1", label = "Total", color = "blue") %>%
+	dySeries("V2", label = "GPU", color = "green") %>%
+	dyAxis("y", label = "SUs consumed") %>%
+	dyRoller(rollPeriod = 7) %>%
+	dyHighlight(highlightSeriesOpts = list(strokeWidth = 3)) %>%
+	dyRangeSelector( dateWindow = dateWindow ) 
 ```
 
 
