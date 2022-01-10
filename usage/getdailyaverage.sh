@@ -1,8 +1,7 @@
 #!/bin/bash
 
-export PATH=/usr/local/bin:/usr/bin:/share/Apps/gnuplot/5.0.3/bin:$PATH
-export LD_LIBRARY_PATH=/share/Apps/gcc/6.1.0/lib64
-export PATH=/share/Apps/R/conda/4.3.31/bin:$PATH
+export PATH=/usr/local/bin:/usr/bin:/share/Apps/lusoft/opt/spack/linux-centos8-haswell/gcc-8.3.1/gnuplot/5.2.8-yqvp7hh/bin:$PATH
+#export PATH=/share/Apps/R/conda/4.3.31/bin:$PATH
 
 cd /home/alp514/usage
 
@@ -10,6 +9,7 @@ cd /home/alp514/usage
 ./dailygpu.sh 2
 
 #gnuplot onepage.gnu
+gnuplot onepage-avg.gnu
 
 #./getuserdaily.sh
 
@@ -21,7 +21,7 @@ mday=$(date -d "today" +%d | awk '{print int($1)}')
 #gnuplot canvas.gnu 2>/dev/null
 
 export TMP=${HOME}/JOB_TMPDIR
-Rscript -e "rmarkdown::render('dygraph.Rmd')"
+#Rscript -e "rmarkdown::render('dygraph.Rmd')"
 
 
 COMMIT_TIMESTAMP=`date +'%Y-%m-%d %H:%M:%S %Z'`
