@@ -1,0 +1,435 @@
+---
+title: "HPC Training"
+output: 
+   flexdashboard::flex_dashboard:
+      source: embed
+---
+
+```{r setup, include=FALSE}
+suppressMessages(library(tidyverse))
+library(googlesheets4)
+library(knitr)
+library(plotly)
+library(DT)
+library(googledrive)
+
+# Function to rename CBE to CoB
+cbe2cob <- function(data){
+  data %>% mutate_if(is.character, str_replace_all, pattern = "CBE", replacement = "CoB")  
+}
+
+# Using new googlesheet API
+options(gargle_oauth_email = "alp514@lehigh.edu")
+#f21 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2021!A7:Q28")
+#s21 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2021!A7:S18")
+#f20 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2020!A7:P49")
+#s20 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2020!A7:N61") %>% cbe2cob()
+#f19 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2019!A7:P35") %>% cbe2cob()
+#u19 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Summer 2019!A7:K50") %>% cbe2cob()
+#s19 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2019!A6:M38") %>% cbe2cob()
+#f18 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2018!A6:L41") %>% cbe2cob()
+#u18 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Summer 2018!A6:K38") %>% cbe2cob()
+#s18 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2018!A6:K24") %>% cbe2cob()
+#f17 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2017!A6:L15") %>% cbe2cob()
+#s17 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2017!A6:N32") %>% cbe2cob()
+#f16 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2016!A6:P56") %>% cbe2cob()
+#f15 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Fall 2015!A6:M58") %>% cbe2cob()
+#s15 <- read_sheet("1GUx4sLiaCcGQPkhrfetoagsCIJ_SUHvfSR62NtpMI1I",range = "Spring 2015!A6:L58") %>% cbe2cob()
+# read using old googlesheet API 
+#usage <- gs_title("Training Attendance")
+#f20 <- usage %>% gs_read("Fall 2020",range = "A7:P27",col_types = cols())
+#s20 <- usage %>% gs_read("Spring 2020",range = "A7:N61",col_types = cols())
+#f19 <- usage %>% gs_read("Fall 2019",range = "A7:P35",col_types = cols())
+#u19 <- usage %>% gs_read("Summer 2019",range = "A7:K50",col_types = cols())
+#s19 <- usage %>% gs_read("Spring 2019",range = "A6:M38",col_types = cols())
+#f18 <- usage %>% gs_read("Fall 2018",range = "A6:L41",col_types = cols())
+#u18 <- usage %>% gs_read("Summer 2018",range = "A6:K38",col_types = cols(), progress = F)
+#s18 <- usage %>% gs_read("Spring 2018",range = "A6:K24",col_types = cols(), progress = F)
+#f17 <- usage %>% gs_read("Fall 2017",range = "A6:L15",col_types = cols())
+#s17 <- usage %>% gs_read("Spring 2017",range = "A6:N32",col_types = cols())
+#f16 <- usage %>% gs_read("Fall 2016",range = "A6:P56",col_types = cols())
+#f15 <- usage %>% gs_read("Fall 2015",range = "A6:M58",col_types = cols())
+#s15 <- usage %>% gs_read("Spring 2015",range = "A6:L58",col_types = cols())
+
+#f21[is.na(f21)] <- 0
+#s21[is.na(s21)] <- 0
+#f20[is.na(f20)] <- 0
+#s20[is.na(s20)] <- 0
+#f19[is.na(f19)] <- 0
+#u19[is.na(u19)] <- 0
+#s19[is.na(s19)] <- 0
+#f18[is.na(f18)] <- 0
+#u18[is.na(u18)] <- 0
+#s18[is.na(s18)] <- 0
+#f17[is.na(f17)] <- 0
+#s17[is.na(s17)] <- 0
+#f16[is.na(f16)] <- 0
+#f15[is.na(f15)] <- 0
+#s15[is.na(s15)] <- 0
+
+
+#f21 %>% select(Name,Department,College,Status,LURC:`Shiny Apps`) %>% 
+#  gather(Session, Count, LURC:`Shiny Apps`) %>% 
+#  mutate(Semester="Fall 2021",ID=15,AY="21-22",CY="2021") -> Fall2021
+#s21 %>% select(Name,Department,College,Status,LURC:`Shiny Apps`) %>% 
+#  gather(Session, Count, LURC:`Shiny Apps`) %>% 
+#  mutate(Semester="Spring 2021",ID=14,AY="20-21") -> Spring2021
+#f20 %>% select(Name,Department,College,Status,LURC:`Text Mining`) %>% 
+#  gather(Session, Count, LURC:`Text Mining`) %>% 
+#  mutate(Semester="Fall 2020",ID=13,AY="20-21") -> Fall2020
+#s20 %>% select(Name,Department,College,Status,LURC:`Machine Learning`) %>% 
+#  gather(Session, Count, LURC:`Machine Learning`) %>% 
+#  mutate(Semester="Spring 2020",ID=12,AY="19-20") -> Spring2020
+#f19 %>% select(Name,Department,College,Status,LURC:`Text Mining`) %>% 
+#  gather(Session, Count, LURC:`Text Mining`) %>% 
+#  mutate(Semester="Fall 2019",ID=11,AY="19-20") -> Fall2019
+#u19 %>% select(Name,Department,College,Status,Linux:`Python Visualization`) %>% 
+#  gather(Session, Count, Linux:`Python Visualization`) %>% 
+#  mutate(Semester="Summer 2019",ID=10,AY="18-19") -> Summer2019
+#s19 %>% select(Name,Department,College,Status,Linux:`Python Visualization`) %>% 
+#  gather(Session, Count, Linux:`Python Visualization`) %>% 
+#  mutate(Semester="Spring 2019",ID=9,AY="18-19") -> Spring2019
+#f18 %>% select(Name,Department,College,Status,Linux:`Python Visualization`) %>% 
+#  gather(Session, Count, Linux:`Python Visualization`) %>% 
+#  mutate(Semester="Fall 2018",ID=8,AY="18-19") -> Fall2018
+#u18 %>% select(Name,Department,College,Status,Linux:MATLAB) %>% 
+#  gather(Session, Count, Linux:MATLAB) %>% 
+#  mutate(Semester="Summer 2018",ID=7,AY="17-18") -> Summer2018
+#s18 %>% select(Name,Department,College,Status,Linux:`R Visualization`) %>% 
+#  gather(Session, Count, Linux:`R Visualization`) %>% 
+#  mutate(Semester="Spring 2018",ID=6,AY="17-18") -> Spring2018
+#f17 %>% select(Name,Department,College,Status,LURC:LaTeX) %>% 
+#  gather(Session, Count, LURC:LaTeX) %>% 
+#  mutate(Semester="Fall 2017",ID=5,AY="17-18") -> Fall2017
+#s17 %>% select(Name,Department,College,Status,LURC:LaTeX) %>% 
+#  gather(Session, Count, LURC:LaTeX) %>%
+#  mutate(Semester="Spring 2017",ID=4,AY="16-17") -> Spring2017
+#f16 %>% select(Name,Department,College,Status,`Linux Intro`:Python) %>% 
+#  gather(Session, Count, `Linux Intro`:Python) %>%
+#  mutate(Semester="Fall 2016",ID=3,AY="16-17") -> Fall2016
+#f15 %>% select(Name,Department,College,Status,Storage:R) %>% 
+#  gather(Session, Count, Storage:R) %>%
+#  mutate(Semester="Fall 2015",ID=2,AY="15-16") -> Fall2015
+#s15 %>% select(Name,Department,College,Status,LURC:MATLAB) %>% 
+#  gather(Session, Count, LURC:MATLAB) %>%
+#  mutate(Semester="Spring 2015",ID=1,AY="14-15") -> Spring2015
+
+Fall2021 <- read_csv("archive/2021-fall.csv")
+Spring2021 <- read_csv("archive/2021-spring.csv")
+Fall2020 <- read_csv("archive/2020-fall.csv")
+Spring2020 <- read_csv("archive/2020-spring.csv")
+Fall2019 <- read_csv("archive/2019-fall.csv")
+Summer2019 <- read_csv("archive/2019-summer.csv")
+Spring2019 <- read_csv("archive/2019-spring.csv")
+Fall2018 <- read_csv("archive/2018-fall.csv")
+Summer2018 <- read_csv("archive/2018-summer.csv")
+Spring2018 <- read_csv("archive/2018-spring.csv")
+Fall2017 <- read_csv("archive/2017-fall.csv")
+Spring2017 <- read_csv("archive/2017-spring.csv")
+Fall2016 <- read_csv("archive/2016-fall.csv")
+Fall2015 <- read_csv("archive/2015-fall.csv")
+Spring2015 <- read_csv("archive/2015-spring.csv")
+
+Attendance <- bind_rows(Spring2021,Fall2020,Spring2020,Fall2019,Summer2019,Spring2019,Fall2018,Summer2018,Spring2018,Fall2017,Spring2017,Fall2016,Fall2015,Spring2015)
+Attendance1415 <- Spring2015
+Attendance1516 <- Fall2015
+Attendance1617 <- bind_rows(Spring2017,Fall2016)
+Attendance1718 <- bind_rows(Summer2018,Spring2018,Fall2017)
+Attendance1819 <- bind_rows(Summer2019,Spring2019,Fall2018)
+Attendance1920 <- bind_rows(Spring2020,Fall2019)
+Attendance2021 <- bind_rows(Spring2021,Fall2020)
+Attendance2122 <- Fall2021
+
+#write_csv(Attendance,"training.csv")
+#write_csv(Spring2021,"archive/2021-spring.csv")
+#write_csv(Fall2020,"archive/2020-fall.csv")
+#write_csv(Spring2020,"archive/2020-spring.csv")
+#write_csv(Fall2019,"archive/2019-fall.csv")
+#write_csv(Summer2019,"archive/2019-summer.csv")
+#write_csv(Spring2019,"archive/2019-spring.csv")
+#write_csv(Fall2018,"archive/2018-fall.csv")
+#write_csv(Summer2018,"archive/2018-summer.csv")
+#write_csv(Spring2018,"archive/2018-spring.csv")
+#write_csv(Fall2017,"archive/2017-fall.csv")
+#write_csv(Spring2017,"archive/2017-spring.csv")
+#write_csv(Fall2016,"archive/2016-fall.csv")
+#write_csv(Fall2015,"archive/2015-fall.csv")
+#write_csv(Spring2015,"archive/2015-spring.csv")
+theme_set(theme_classic())
+```
+
+```{r deffunc}
+summary_setup <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Semester,ID) %>%
+    summarize(Total=sum(Count))
+}
+
+attendeetotal <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Semester,ID) %>%
+    summarize(Sessions=sum(n_distinct(Session)),Attendees=sum(Count)) %>%
+    arrange(ID)
+}
+
+attendeeunique <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Name,Semester,ID) %>%
+    summarize(Unique=sum(n_distinct(Name))) %>%
+    group_by(Semester,ID) %>%
+    summarize(Unique=sum(Unique)) %>%
+    arrange(ID)
+}
+
+attendeedesc <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Session) %>%
+    summarize(Offered= sum(n_distinct(Semester)),Attendees=sum(Count)) %>%
+    mutate(Average=round(Attendees/Offered,2)) %>%
+    arrange(-Attendees)
+}
+
+attendeestatus <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Semester,Status,ID) %>%
+    summarize(Total=sum(Count))
+}
+
+attendeesession <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Semester,Session,ID) %>%
+    summarize(Total=sum(Count))
+}
+
+attendeedept <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Department) %>%
+    summarize(Total=sum(Count))
+}
+
+attendeedeptunique <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Name,Department) %>%
+    summarize(Unique=sum(n_distinct(Name))) %>%
+    group_by(Department) %>%
+    summarize(Unique=sum(Unique))
+}
+
+deptunique <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Department,Semester,ID) %>%
+    summarize(Unique=sum(n_distinct(Department))) %>%
+    group_by(Semester,ID) %>%
+    summarize(Department=sum(Unique)) %>%
+    arrange(ID)
+}
+
+depttotal <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Semester,ID) %>%
+    count(Department) %>%
+    summarize(Department=sum(n)) %>%
+    arrange(ID)
+}
+
+attendeestatustotal <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Status) %>%
+    summarize(Attendees=sum(Count))
+}
+
+attendeestatusunique <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Name,Status) %>%
+    summarize(Unique=sum(n_distinct(Name))) %>%
+    group_by(Status) %>%
+    summarize(Unique=sum(Unique))
+}
+
+collegetotal <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(College) %>%
+    summarize(Attendees=sum(Count)) 
+}
+
+collegeunique <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Name,College) %>%
+    summarize(Unique=sum(n_distinct(Name))) %>%
+    group_by(College) %>%
+    summarize(Unique=sum(Unique))
+}
+
+sem_status <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Status) %>%
+    summarize(Total=sum(Count))
+}
+
+sem_unique <- function(data) {
+  data %>%
+    filter(Count > 0) %>%
+    group_by(Name,Status) %>%
+    summarize(Total=n_distinct(Name)) %>%
+    select(Status,Total) %>%
+    group_by(Status) %>%
+    summarize(Unique=n())
+}
+
+sem_attendee <- function(data,col_name1,col_name2) {
+  col_name1 <- as.name(col_name1)
+  col_name2 <- as.name(col_name2)
+  data %>%
+    filter(Count>0) %>%
+    group_by_(col_name1,col_name2) %>%
+    summarize(Attendees=sum(Count))
+}
+
+sem_attendee_session <- function(data) {
+  data %>%
+    filter(Count>0) %>%
+    group_by(Session) %>%
+    summarize(Attendees=sum(Count))
+}
+
+sem_attendee_dept <- function(data) {
+  data %>%
+    filter(Count > 0) %>%
+    group_by(Department) %>%
+    summarize(Total=n())
+}
+```
+
+Summary {.storyboard}
+=========================================
+
+
+###  Attendees {data-commentary-width=400}
+
+```{r summary_setup,eval=F}
+Attendance %>% summary_setup %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, type = "bar", 
+          name = "Total Number of Attendees per Semester") %>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+
+```{r summary_attendees,echo=F}
+Attendance %>% attendeetotal -> Attendees_Total
+Attendance %>% attendeeunique -> Attendees_Unique
+full_join(Attendees_Total,Attendees_Unique) -> Attendance_Summary
+plot_ly(data=Attendance_Summary, 
+        x = ~reorder(Semester,ID), y = ~Attendees, 
+        type = "bar", 
+        name = "Total Attendees") %>%
+    add_trace(y =  ~ Unique, name = "Unique Attendees") %>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+*** 
+
+```{r summary_attendees_desc,echo=F}
+Attendance %>% attendeetotal -> Attendees_Total
+Attendance %>% attendeeunique -> Attendees_Unique
+full_join(Attendees_Total,Attendees_Unique) %>% select(-ID) -> tmp
+tmp1 <- tribble(
+   ~Semester,~Sessions,~Attendees,~Unique,
+   "",sum(tmp$Sessions),sum(tmp$Attendees),sum(tmp$Unique))
+bind_rows(tmp,tmp1) %>% kable()
+
+Attendance %>% attendeedesc %>% kable()
+```
+
+### Attendees Status
+
+```{r summary_attendee_status,echo=F}
+Attendance %>% attendeestatus %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, color = ~Status, type = "bar")%>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+***
+
+```{r total_attendee_status,echo=F}
+Attendance %>% attendeestatustotal -> total_attendee
+Attendance %>% attendeestatusunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp 
+add_row(tmp,Status="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+### Attendees per Session
+
+```{r summary_attendee_session,echo=F}
+Attendance %>% attendeesession %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, color = ~Session, type = "bar")%>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ), barmode = 'stack')
+```
+
+### Departments/Majors represented by Attendees {data-commentary-width=600}
+
+
+```{r summary_attendee_dept,echo=F}
+Attendance %>% attendeedept -> tmp1
+Attendance %>% attendeedeptunique -> tmp2
+full_join(tmp2,tmp1) %>% datatable(options=list(pageLength = 15))
+```
+
+*** 
+
+```{r summary_attendee,echo=F}
+Attendance %>% deptunique -> Department_Unique
+Attendance %>% depttotal -> Department_Total
+full_join(Attendees_Total,Department_Unique) %>% 
+  select(-ID) -> tmp
+tmp1 <- tribble(
+  ~Semester,~Sessions,~Attendees,~Department,
+  "",sum(tmp$Sessions),sum(tmp$Attendees),sum(tmp$Department))
+bind_rows(tmp,tmp1) %>% kable()
+```
+
+```{r summary_college,echo=F}
+Attendance %>% collegetotal -> total_attendee
+Attendance %>% collegeunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp 
+add_row(tmp,College="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+```{r child = "Rmds/ay2122.Rmd"}
+```
+
+```{r child = "Rmds/ay2021.Rmd"}
+```
+
+```{r child = "Rmds/ay1920.Rmd"}
+```
+
+```{r child = "Rmds/ay1819.Rmd"}
+```
+
+```{r child = "Rmds/ay1718.Rmd"}
+```
+
+```{r child = "Rmds/ay1617.Rmd"}
+```
+
+```{r child = "Rmds/ay1516.Rmd"}
+```
+
+```{r child = "Rmds/ay1415.Rmd"}
+```
+

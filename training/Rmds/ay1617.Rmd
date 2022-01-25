@@ -1,0 +1,220 @@
+Summary {.storyboard data-navmenu="2016-17"}
+=========================================
+
+
+###  Attendees {data-commentary-width=400}
+
+```{r ay1617_setup,eval=F}
+Attendance1617 %>% summary_setup %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, type = "bar", 
+          name = "Total Number of Attendees per Semester") %>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+
+```{r ay1617_attendee_summary,echo=F}
+Attendance1617 %>% attendeetotal ->  Attendees_Total
+Attendance1617 %>% attendeeunique -> Attendees_Unique
+full_join(Attendees_Total,Attendees_Unique) -> Attendance1617_Summary
+plot_ly(data=Attendance1617_Summary, 
+        x = ~reorder(Semester,ID), y = ~Attendees, 
+        type = "bar", 
+        name = "Total Attendees") %>%
+    add_trace(y =  ~ Unique, name = "Unique Attendees") %>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+*** 
+
+```{r ay1617_attendee_total,echo=F}
+Attendance1617 %>% attendeetotal ->  Attendees_Total
+Attendance1617 %>% attendeeunique -> Attendees_Unique
+full_join(Attendees_Total,Attendees_Unique) %>% select(-ID) -> tmp
+tmp1 <- tribble(
+  ~Semester,~Sessions,~Attendees,~Unique,
+  "",sum(tmp$Sessions),sum(tmp$Attendees),sum(tmp$Unique)) 
+bind_rows(tmp,tmp1) %>% kable()
+
+Attendance1617 %>% attendeedesc %>% kable()
+```
+
+### Attendees Status
+
+```{r ay1617_attendee_status,echo=F}
+Attendance1617 %>% attendeestatus %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, color = ~Status, type = "bar")%>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ))
+```
+
+***
+
+```{r ay1617_total_attendee_status,echo=F}
+Attendance1617 %>% attendeestatustotal -> total_attendee
+Attendance1617 %>% attendeestatusunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp
+add_row(tmp,Status="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+### Attendees per Session
+
+```{r ay1617_attendee_session,echo=F}
+Attendance1617 %>% attendeesession %>%
+  plot_ly(x = ~reorder(Semester,ID), y = ~Total, color = ~Session, type = "bar")%>%
+  layout(xaxis = list(title = 'Semester'), yaxis = list(title = '' ), barmode = 'stack')
+```
+
+### Departments/Majors represented by Attendees {data-commentary-width=600}
+
+
+```{r ay1617_attendee_dept,echo=F}
+Attendance1617 %>% attendeedept -> tmp1
+Attendance1617 %>% attendeedeptunique -> tmp2
+full_join(tmp2,tmp1) %>% datatable()
+```
+
+*** 
+
+```{r ay1617_attendee,echo=F}
+Attendance1617 %>% deptunique -> Department_Unique
+Attendance1617 %>% depttotal -> Department_Total
+full_join(Attendees_Total,Department_Unique) %>% select(-ID) -> tmp
+tmp1 <- tribble(
+   ~Semester,~Sessions,~Attendees,~Department,
+   "",sum(tmp$Sessions),sum(tmp$Attendees),sum(tmp$Department))
+bind_rows(tmp,tmp1) %>% kable()
+```
+
+```{r ay1617_college,echo=F}
+Attendance1617 %>% collegetotal -> total_attendee
+Attendance1617 %>% collegeunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp 
+add_row(tmp,College="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+
+
+Spring 2017 {.storyboard data-navmenu="2016-17"}
+=========================================
+
+### Summary {data-commentary-width=400}
+
+```{r spring2017_setup,echo=F,warning=F,include=F}
+Spring2017 %>% sem_status -> Spring2017Status
+Spring2017 %>% sem_unique -> Spring2017StatusUnique
+full_join(Spring2017Status,Spring2017StatusUnique,by="Status") %>%
+  summarise_if(is.numeric,sum) -> Spring2017Total
+```
+
+
+```{r spring2017_attendee,echo=F}
+Spring2017 %>% sem_attendee("Session","Status") %>%
+  plot_ly(x = ~ Session, y= ~ Attendees, color = ~ Status, type = "bar")
+```
+
+
+*** 
+
+```{r spring2017_attendee_summary,echo=F}
+full_join(Spring2017Status,Spring2017StatusUnique,by="Status")  %>%
+  add_row(Status=" ",
+          Total=Spring2017Total$Total, 
+          Unique=Spring2017Total$Unique) %>% kable()
+Spring2017 %>% sem_attendee_session %>% kable()
+```
+
+### Attendees by Session
+
+```{r spring2017_attendee_session}
+Spring2017 %>% sem_attendee("Session","Status") %>%
+  spread(Status,Attendees,fill=0) %>% kable()
+Spring2017 %>% sem_attendee("Session","Department") %>%
+  spread(Session,Attendees,fill=0) %>% 
+  datatable(filter = 'top', 
+            options = list(pageLength = 50, autoWidth = TRUE)
+            )
+```
+
+### Department/Majors represented by Attendees
+
+```{r spring2017_attendee_deptecho=F}
+Spring2017 %>% sem_attendee_dept %>%
+  plot_ly(x = ~ Total, y = ~ reorder(Department,Total), type = "bar") %>%
+  layout(yaxis = list(title = ' Department/Major' ), 
+     xaxis = list(title = '' ),
+     margin = list(l = 250, r = 20, t = 25, b = 25))
+```
+
+***
+
+```{r spring2017_college,echo=F}
+Spring2017 %>% collegetotal -> total_attendee
+Spring2017 %>% collegeunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp 
+add_row(tmp,College="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+
+
+Fall 2016 {.storyboard data-navmenu="2016-17"}
+=========================================
+
+### Summary {data-commentary-width=400}
+
+```{r fall2016_setup,echo=F,warning=F,include=F}
+Fall2016 %>% sem_status -> Fall2016Status
+Fall2016 %>% sem_unique -> Fall2016StatusUnique
+full_join(Fall2016Status,Fall2016StatusUnique,by="Status") %>%
+  summarise_if(is.numeric,sum) -> Fall2016Total
+```
+
+
+```{r fall2016_attendee,echo=F}
+Fall2016 %>% sem_attendee("Session","Status") %>%
+  plot_ly(x = ~ Session, y= ~ Attendees, color = ~ Status, type = "bar")
+```
+
+
+*** 
+
+```{r fall2016_attendee_summary,echo=F}
+full_join(Fall2016Status,Fall2016StatusUnique,by="Status")  %>%
+  add_row(Status=" ",
+          Total=Fall2016Total$Total, 
+          Unique=Fall2016Total$Unique) %>% kable()
+Fall2016 %>% sem_attendee_session %>% kable()
+```
+
+### Attendees by Session
+
+```{r fall2016__attendee_session}
+Fall2016 %>% sem_attendee("Session","Status") %>%
+  spread(Status,Attendees,fill=0) %>% kable()
+Fall2016 %>% sem_attendee("Session","Department") %>%
+  spread(Session,Attendees,fill=0) %>% 
+  datatable(filter = 'top', 
+            options = list(pageLength = 50, autoWidth = TRUE)
+            )
+```
+
+### Department/Majors represented by Attendees
+
+```{r fall2016__attendee_dept,echo=F}
+Fall2016 %>% sem_attendee_dept %>%
+  plot_ly(x = ~ Total, y = ~ reorder(Department,Total), type = "bar") %>%
+  layout(yaxis = list(title = ' Department/Major' ), 
+     xaxis = list(title = '' ),
+     margin = list(l = 250, r = 20, t = 25, b = 25))
+```
+
+***
+
+```{r fall2016_college,echo=F}
+Fall2016 %>% collegetotal -> total_attendee
+Fall2016 %>% collegeunique -> unique_attendee
+full_join(total_attendee,unique_attendee) -> tmp 
+add_row(tmp,College="",Attendees=sum(tmp$Attendees),Unique=sum(tmp$Unique)) %>% kable()
+```
+
+
+
+

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#module load anaconda/python3
+
+R -e "rmarkdown::render('training.Rmd')" 
+
+scp -rp training.csv sun:~/dashboard/
+scp -rp training.html bew:/srv/projects/hpc/training/
+
+
+
