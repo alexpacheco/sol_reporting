@@ -89,8 +89,8 @@ Attendance %>% group_by(College) %>% summarize(Total=sum(Count), Unique=sum(n_di
 ### 
 
 ```{r}
-tmp1 <- Attendance %>% group_by(AY,ID) %>% summarize(Sessions=sum(n_distinct(Session))) %>% group_by('Academic Year'=AY) %>% summarize(Sessions=sum(Sessions))
-tmp2 <- Attendance %>% group_by('Academic Year'=AY) %>% summarize(Total=sum(Count), Unique=sum(n_distinct(Name))) 
+tmp1 <- Attendance %>% group_by(CY,ID) %>% summarize(Sessions=sum(n_distinct(Session))) %>% group_by('Year'=CY) %>% summarize(Sessions=sum(Sessions))
+tmp2 <- Attendance %>% group_by('Year'=CY) %>% summarize(Total=sum(Count), Unique=sum(n_distinct(Name))) 
 inner_join(tmp1,tmp2) %>% kable()
 ```
 
@@ -102,5 +102,5 @@ Attendance %>% group_by(Session) %>% summarize(Offered=n_distinct(Semester),Atte
   mutate_if(is.character, str_replace_all, pattern = "Shell Advanced", replacement = "Advanced Shell Scripting") %>%
   mutate_if(is.character, str_replace_all, pattern = "Python OOP", replacement = "Python Object Oriented Programming") %>%
   mutate_if(is.character, str_replace_all, pattern = "RDM", replacement = "Research Data Management") %>%
-  datatable(options = list(pageLength = 5, autoWidth = TRUE, dom='tip'), , rownames = FALSE)
+  datatable(options = list(pageLength = 5, autoWidth = TRUE, dom='tip', scrollY = '200px'), , rownames = FALSE)
 ```

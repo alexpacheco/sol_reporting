@@ -24,6 +24,8 @@ scp -rp annual*html monthly*html total*html pidept*html user*html summary.html t
 
 export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin:$PATH
 rclone copy -P ~/dashboard dropbox:sol_reporting/dashboard
+cd flyer
 singularity exec /home/alp514/latex-leap153.sif pdflatex lehighrc
 singularity exec /home/alp514/latex-leap153.sif pdflatex lehighrc
-rclone copy -P flyer/lehighrc.pdf  lugdrive:'Ads for New Faculty'/
+rclone copy -P lehighrc.pdf dropbox:sol_reporting/dashboard/flyer
+rclone copy -P lehighrc.pdf lugdrive:'Ads for New Faculty'/
