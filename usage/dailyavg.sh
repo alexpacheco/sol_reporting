@@ -12,7 +12,7 @@ fi
 let first=$day+1
 let third=$day-1
 
-state="COMPLETED,CANCELLED,FAILED,TIMEOUT"
+state="COMPLETED,CANCELLED,FAILED,TIMEOUT,OUT_OF_MEMORY"
 start=$(date -d "$first day ago" +%Y-%m-%d-00:00:00)
 end=$(date -d "$third day ago" +%Y-%m-%d-23:59:59)
 

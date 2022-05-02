@@ -32,6 +32,8 @@ hawkcpucore=$(sinfo -N --Format=cpus -p hawkcpu | awk '{s+=$1}END{print s}')
 hawkgpucore=$(sinfo -N --Format=cpus -p hawkgpu | awk '{s+=$1}END{print s}')
 hawkmemcore=$(sinfo -N --Format=cpus -p hawkmem | awk '{s+=$1}END{print s}')
 infolabcore=$(sinfo -N --Format=cpus -p infolab | awk '{s+=$1}END{print s}')
+piscescore=$(sinfo -N --Format=cpus -p pisces | awk '{s+=$1}END{print s}')
+ima40core=$(sinfo -N --Format=cpus -p ima40-gpu | awk '{s+=$1}END{print s}')
 ltsalloc=$(echo $numdays $ltscore | awk '{print $1*$2*24}')
 im1080alloc=$(echo $numdays $im1080core | awk '{print $1*$2*24}')
 engalloc=$(echo $numdays $engcore | awk '{print $1*$2*24}')
@@ -46,7 +48,9 @@ hawkcpualloc=$(echo $numdays $hawkcpucore | awk '{print $1*$2*24}')
 hawkgpualloc=$(echo $numdays $hawkgpucore | awk '{print $1*$2*24}')
 hawkmemalloc=$(echo $numdays $hawkmemcore | awk '{print $1*$2*24}')
 infolaballoc=$(echo $numdays $infolabcore | awk '{print $1*$2*24}')
-totalalloc=$(echo $ltsalloc $im1080alloc $engalloc $engcalloc $himemalloc $engealloc $engialloc $im2080alloc $chemalloc $healthalloc $hawkcpualloc $hawkgpualloc $hawkmemalloc $infolaballoc| awk '{for (i=1;i<=NF;i++){s+=$i}}END{print s}')
+piscesalloc=$(echo $numdays $piscescore | awk '{print $1*$2*24}')
+ima40alloc=$(echo $numdays $ima40core | awk '{print $1*$2*24}')
+totalalloc=$(echo $ltsalloc $im1080alloc $engalloc $engcalloc $himemalloc $engealloc $engialloc $im2080alloc $chemalloc $healthalloc $hawkcpualloc $hawkgpualloc $hawkmemalloc $infolaballoc $piscesalloc $ima40alloc | awk '{for (i=1;i<=NF;i++){s+=$i}}END{print s}')
 total=0
 
 echo Monthly SUs
@@ -64,6 +68,8 @@ echo "hawkcpu:" $hawkcpualloc
 echo "hawkgpu:" $hawkgpualloc
 echo "hawkmem:" $hawkmemalloc
 echo "infolab:" $infolaballoc
+echo "pisces :" $piscesalloc
+echo "ima40  :" $ima40alloc
 echo "total  :" $totalalloc
 
 #echo $tic $tock $difftime
@@ -74,7 +80,7 @@ echo "  User        SUs used     % Use"
 echo "================================"
 for user in $(sacct -a --starttime=$start --endtime=$end -X -o User | tail -n +3 | sort | uniq )
 do
-  usage=$(sacct -u $user --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o CPUTimeRAW | awk '{s+=$NF}END{print s/60/60}')
+  usage=$(sacct -u $user --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o CPUTimeRAW | awk '{s+=$NF}END{print s/60/60}')
   echo $user $usage $totalalloc| awk '{printf " %6s: %12.2f  %8.2f\n",$1,$2,$2/$3*100}'
   total=$(echo $total $usage | awk '{printf "%12.2f\n",$1+$2}')
 done
@@ -84,45 +90,49 @@ usepercent=$(echo $total $totalalloc | awk '{printf "%8.2f\n",$1/$2*100}')
 echo "% Usage:" $usepercent
 echo "========================================"
 echo "Usage by Partition"
-sacct -r lts -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r lts,lts-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","lts",s/60/60,(s/60/60)/'$ltsalloc'*100}'
-sacct -r im1080,im1080-gpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r im1080,im1080-gpu,im1080-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","im1080",s/60/60,(s/60/60)/'$im1080alloc'*100}'
-sacct -r eng -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r eng,eng-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","eng",s/60/60,(s/60/60)/'$engalloc'*100}'
-sacct -r engc -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r engc,engc-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","engc",s/60/60,(s/60/60)/'$engcalloc'*100}'
-sacct -r himem,himem-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r himem,himem-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","himem",s/60/60,(s/60/60)/'$himemalloc'*100}'
-sacct -r enge -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r enge,enge-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","enge",s/60/60,(s/60/60)/'$engealloc'*100}'
-sacct -r engi -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r engi,engi-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","engi",s/60/60,(s/60/60)/'$engialloc'*100}'
-sacct -r im2080,im2080-gpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r im2080,im2080-long,im2080-gpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","im2080",s/60/60,(s/60/60)/'$im2080alloc'*100}'
-sacct -r chem -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r chem,chem-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","chem",s/60/60,(s/60/60)/'$chemalloc'*100}'
-sacct -r health -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r health,health-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","health",s/60/60,(s/60/60)/'$healthalloc'*100}'
-sacct -r hawkcpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r hawkcpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","hawkcpu",s/60/60,(s/60/60)/'$hawkcpualloc'*100}'
-sacct -r hawkgpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r hawkgpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","hawkgpu",s/60/60,(s/60/60)/'$hawkgpualloc'*100}'
-sacct -r hawkmem -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r hawkmem -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","hawkmem",s/60/60,(s/60/60)/'$hawkmemalloc'*100}'
-sacct -r infolab -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r infolab -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","infolab",s/60/60,(s/60/60)/'$infolaballoc'*100}'
-#sacct -r all-cpu,all-gpu,test,test-gpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+sacct -r pisces,pisces-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+    awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","pisces",s/60/60,(s/60/60)/'$piscesalloc'*100}'
+sacct -r ima40,ma40-long,ima40-gpu,ima40-gpu-long -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+    awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","ima40",s/60/60,(s/60/60)/'$ima40alloc'*100}'
+#sacct -r all-cpu,all-gpu,test,test-gpu -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
 #    awk '{s+=$NF}END{printf " %12s: %12.2f  %8.2f%\n","all-cpu/gpu",s/60/60,(s/60/60)/'$totalalloc'*100}'
-echo "========================================"
+echo "=============================================="
 echo "Usage by PI"
-for pi in $(sacct -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Account%15  | tail -n +3 | sort |  uniq )
+for pi in $(sacct -a --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Account%25  | tail -n +3 | sort |  uniq )
 do
-  usage=$(sacct -a -A ${pi} --state=COMPLETED,CANCELLED,FAILED,TIMEOUT --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
+  usage=$(sacct -a -A ${pi} --state=COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY --starttime=$start --endtime=$end -X -o Partition,CPUTimeRAW | \
     awk '{if ( $1 ~ /bio-s/){s+=$NF/24}else{s+=$NF}}END{print s/60/60}')
-  echo $pi $usage $totalalloc | awk '{printf " %12s: %12.2f %8.2f%\n",$1,$2,$2/$3*100}'
+  echo $pi $usage $totalalloc | awk '{printf " %20s: %12.2f %8.2f%\n",$1,$2,$2/$3*100}'
 done
-echo "===================================="
+echo "=============================================="
 echo "Monthly Sol Usage: $(date -d "$prevmonth month ago" +"%B, %Y")"
 exit
 

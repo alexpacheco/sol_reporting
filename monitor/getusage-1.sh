@@ -4,7 +4,7 @@
 cd /home/alp514/monitor
 
 echo "Get this months usage"
-sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL" \
+sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY" \
     -S $(date -d "1 day ago" +%Y-%m-01-00:00:00) \
     -E $(date -d "1 day ago" +%Y-%m-%d-23:59:59) \
     -p --delimiter=";" \
@@ -14,7 +14,7 @@ sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL" \
 ls -ltr jobs-0.csv
 
 echo "Get yesterdays usage"
-sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL" \
+sacct -a --state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY" \
     -S $(date -d "1 day ago" +%Y-%m-%d-00:00:00) \
     -E $(date -d "1 day ago" +%Y-%m-%d-23:59:59) \
     -p --delimiter=";" \
@@ -27,7 +27,7 @@ today=$(date +%d)
 
 if [[ "$today" == "01" ]]; then
   tail -n +2 jobs-0.csv | gzip >> jobsalloc.csv.gz
-  for part in lts im1080 eng engc enge engi himem-long im2080 chem health hawkcpu hawkmem hawkgpu infolab
+  for part in lts im1080 eng engc enge engi himem-long im2080 chem health hawkcpu hawkmem hawkgpu infolab pisces ima40-gpu
   do
     sbatch -p ${part} -t 1 -n 1 -J aysub jobsub.sh
   done
@@ -39,6 +39,8 @@ echo "Compile annual report"
 export PATH=/share/Apps/usr/bin:/usr/local/bin:${PATH}
 #export PATH=/share/Apps/usr/bin:/usr/local/bin:/share/Apps/anaconda3/2020.07/envs/r/bin:${PATH}
 #export LD_LIBRARY_PATH=/lib64:$LD_LIBRARY_PATH
+export TMPDIR=/tmp
+export TMP=/tmp
 #R -e "rmarkdown::render('ay1718.Rmd')"
 #scp -rp ay1718.html webapps:/srv/projects/hpc/monitor/
 #R -e "rmarkdown::render('ay1819.Rmd')"

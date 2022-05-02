@@ -21,7 +21,7 @@ ay1718su <- c(955296.00,924480.00,967200.00,967200.00,873600.00,967200.00,111744
 ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,2188*30)*24
 ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
 ay2021su <- c(2404*31,2404*30,2404*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
-ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
+ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
 
 daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122)
 aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su)
@@ -66,6 +66,7 @@ monthlyusage <- dygraph( xts(cbind(monthly$Total,monthly$Available), order.by = 
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-01", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 monthlyusage$sizingPolicy$padding <- "0"
 saveWidget(monthlyusage, file="monthlyusage.html")
@@ -468,4 +469,11 @@ monthlypowerusage <- dygraph( xts(cbind(monthlypower$Power,monthlypower$Energy),
   dyRangeSelector( dateWindow = dateWindow)
 monthlypowerusage$sizingPolicy$padding <- "0"
 saveWidget(monthlypowerusage, file="monthlypowerusage.html")
+
+annual_summary <- daily %>%
+	group_by(Year=floor_date(as.Date(Day),"year"),PI) %>%
+	summarize(SUs=sum(as.double(Total)),Jobs=sum(as.double(TotalJ)))
+
+annual_summary %>% knitr::kable()
+
 

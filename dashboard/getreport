@@ -34,7 +34,7 @@ if [[ "$1" == "2020-10-01" || "$1" == "2021-10-01" ]] ; then
 echo "Type;Name;Department;PI;PIDept;Status;Day;SerialJ;Serial;SingleJ;Single;MultiJ;Multi;TotalJ;Total"
 fi
 
-state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL"
+state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY"
 
 #for alloc in $(sshare | tail -n +3 | awk '{print $1}' | sed -e 's/_1718//g' | sort | egrep -iv 'description|root' | uniq)
 # Loop over months
@@ -68,7 +68,7 @@ do
 		;;
 	    gil213*)
 		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
-		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=amr211 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=amr511 | grep "ou:" | awk -F: '{printf "%s;",$2}')
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    jdg4*)
@@ -77,8 +77,13 @@ do
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    wbf0_*)
-		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$3,$1}')
-		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=div206 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=che218 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+	    div206_*)
+		pi=$(ldapsearch -x -LLL -h nis.cc.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=che218 | grep "ou:" | awk -F: '{printf "%s;",$2}')
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    jab614_*)
@@ -96,7 +101,7 @@ do
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "ou:" | awk -F: '{printf "%s;",$2}')
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=${piid} | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
-	    che395*)
+	    che395*|che396*)
 		pi=$(echo $alloc | tr [:lower:] [:upper:] | awk -F_ '{printf "%s Course;",$1}')
 		pidept=" Chemical Engineering; "
 		pistatus=" Course; "
@@ -210,6 +215,11 @@ do
 		pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=inreu | egrep -i "givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s %s;",$1, $2, $3}')
 		pidept=$pi
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=inreu | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		;;
+            hje00*)
+		pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hj00 | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hj00 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hj00 | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    *)
 		pi=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=$piid | egrep -i "sn:|givenName" | awk -F: '{print $2}' | xargs | awk '{printf " %s %s;",$2,$1}')

@@ -96,6 +96,8 @@ hawkcpu <- Sol %>% filter(Partition=="hawkcpu")
 hawkgpu <- Sol %>% filter(Partition=="hawkgpu")
 hawkmem <- Sol %>% filter(Partition=="hawkmem")
 infolab <- Sol %>% filter(Partition=="infolab")
+pisces <- Sol %>% filter(Partition=="pisces")
+ima40-gpu <- Sol %>% filter(Partition=="ima40-gpu")
 ```
 
 ### lts
@@ -140,14 +142,14 @@ gauge(round(enge$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = 
 gauge(round(engi$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#engi-1")
 ```
 
-Row {data-height=240}
------------------------------------
-
 ### im2080
 
 ```{r}
 gauge(round(imlab2$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#im2080-1")
 ```
+
+Row {data-height=240}
+-----------------------------------
 
 ### chem
 
@@ -183,6 +185,18 @@ gauge(round(hawkmem$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors
 
 ```{r}
 gauge(round(infolab$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#infolab-1")
+```
+
+### pisces
+
+```{r}
+gauge(round(pisces$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#pisces-1")
+```
+
+### ima40
+
+```{r}
+gauge(round(ima40$Used), min = 0, max = 100, symbol = '%', gaugeSectors(colors = c('red')), href="#ima40-1")
 ```
 
 
@@ -1398,7 +1412,7 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobstoday <- read_delim('jobs.csv',delim=";")#, col_select=c(JobID:End)) 
+jobstoday <- read_delim('jobs.csv',delim=";") %>% select(c(JobID:End)) 
 jobstoday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
@@ -1504,7 +1518,7 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobsyesterday <- read_delim('jobs-1.csv',delim=";")#, col_select=c(JobID:End))
+jobsyesterday <- read_delim('jobs-1.csv',delim=";") %>% select(c(JobID:End))
 jobsyesterday %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 
@@ -1611,7 +1625,7 @@ Row
 ### Summary
 
 ```{r echo=F}
-jobsthismonth <- read_delim('jobs-0.csv',delim=";")#, col_select=c(JobID:End)) 
+jobsthismonth <- read_delim('jobs-0.csv',delim=";") %>% select(c(JobID:End))
 jobsthismonth %>% 
   group_by(Partition) %>% 
   select(c(Start,Submit,End)) %>% 

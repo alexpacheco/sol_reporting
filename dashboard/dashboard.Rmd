@@ -8,6 +8,8 @@ output:
     source: embed
     smart: false
     navbar:
+      - { title: "Annual Usage", href: "https://webapps.lehigh.edu/hpc/usage/annualusage.html"}
+      - { title: "HPC Training", href: "https://webapps.lehigh.edu/hpc/training/training.html"}
       - { title: "Daily Monitoring", href: "https://webapps.lehigh.edu/hpc/monitor"}
       - { title: "System Status", href: "https://rcstatus.cc.lehigh.edu"}
 ---
@@ -37,9 +39,9 @@ library(plotly)
 
 # read usage by partition and clean data
 # New partition  -> add 2 to seq_len
-data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(33)), fill = TRUE)
+data <- read.table('/home/alp514/usage/daily.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(37)), fill = TRUE)
 data[is.na(data)] <- 0
-datagpu <- read.table('/home/alp514/usage/dailygpu.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(11)), fill = TRUE)
+datagpu <- read.table('/home/alp514/usage/dailygpu.csv', header = FALSE, sep = ",", col.names = paste0("V",seq_len(15)), fill = TRUE)
 datagpu[is.na(datagpu)] <- 0
 
 # read daily usage reports
@@ -153,7 +155,7 @@ ay1718su <- c(955296.00,924480.00,967200.00,967200.00,873600.00,967200.00,111744
 ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,2188*30)*24
 ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
 ay2021su <- c(2404*31,2404*30,2404*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
-ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
+ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
 
 # tatal available by CY
 cy2016su <- c(580320.00,561600.00,580320.00)
@@ -162,7 +164,7 @@ cy2018su <- c(967200.00,873600.00,967200.00,1117440.00,  1154688.00,1117440.00,1
 cy2019su <- c(2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,2188*30,2188*31,2188*30,2188*31)*24
 cy2020su <- c(2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30,2404*31,2404*30,2404*31)*24
 cy2021su <- c(4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30,4260*31,4260*30,4260*31)*24
-cy2022su <- c(4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30,4260*31,4260*30,4260*31)*24
+cy2022su <- c(4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30,4404*31,4404*30,4404*31)*24
 
 # cummalative total by AY
 aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su)
@@ -213,9 +215,20 @@ hawkgpunodes <- 4
 infolabnodes <- 2
 hawkcpucores <- 52
 hawkgpucores <- 48
-hawkgpu <- 32
+hawkgpu <- hawkgpunodes * 8
 hawkcpuperf <- 1.3*avx512
 hawkgpuperf <-  1.3*avx256
+piscesnodes <- 1
+piscescores <- 48
+piscescpuperf <- 2*avx512
+piscesgpu <- piscesnodes * 5
+piscesgpuperf <- 9.7
+piscesmem <- 192
+ima40nodes <- 3
+ima40cores <- 32
+ima40cpuperf <- 2.8*avx256
+ima40gpu <- ima40nodes * 8
+ima40gpuperf <- 1.17
 
 superyear <- 24*365
 
@@ -231,30 +244,35 @@ chem <- (engecnodes + chemnodes)*chemcores*24
 health <- healthnodes*healthcores*24
 hawk <- (hawkcpunodes + hawkmemnodes)*hawkcpucores*24 + hawkgpunodes*hawkgpucores*24
 infolab <- infolabnodes *hawkcpucores*24 
-all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health + hawk + infolab
+pisces <- piscesnodes * piscescores*24 
+ima40 <- ima40nodes * ima40cores*24 
 
-solnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes + infolabnodes
+all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health + hawk + infolab + pisces + ima40
+
+solnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes + infolabnodes + piscesnodes + ima40nodes
 hawknodes <- hawkcpunodes + hawkmemnodes + hawkgpunodes
 totalnodes <- solnodes + hawknodes
-solcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores + infolabnodes*hawkcpucores
+solcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores + infolabnodes*hawkcpucores + piscesnodes*piscescores + ima40nodes*ima40cores
 hawkcores <- (hawkcpunodes + hawkmemnodes)*hawkcpucores + hawkgpunodes*hawkgpucores
 totalcores <- solcores + hawkcores
-solmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192 + infolabnodes * 384
+solmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192 + infolabnodes * 384 + piscesnodes * 192 + ima40nodes * 256
 hawkmem <- hawkcpunodes * 384 + hawkmemnodes * 1536 + hawkgpunodes * 192
 totalmem <- solmem + hawkmem
 solperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + 
      (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf + healthnodes*healthcores*healthperf)/1000 + 
-     infolabnodes*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000
+     infolabnodes*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000 + piscesnodes*piscescores*piscescpuperf/1000 + ima40nodes*ima40cores*ima40cpuperf/1000
 hawkperf <- (hawkcpunodes + hawkmemnodes)*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000
 totalperf <- solperf + hawkperf
 
-solgpumem <- im1080gpu * 8 + im2080gpu * 11
+solgpumem <- im1080gpu * 8 + im2080gpu * 11 + piscesgpu * 40 + ima40gpu * 48
 hawkgpumem <- hawkgpu * 16
 gpumem <- solgpumem + hawkgpumem
 im1080cuda <- im1080gpu * 2560
 im2080cuda <- im2080gpu * 4352
 teslat4cuda <- hawkgpu * 2560
-solgpuperf <- im1080gpu*257/1000 + im2080gpu*367.2/1000
+piscescuda <- piscesgpu * 6912
+ima40cuda <- ima40gpu * 10752
+solgpuperf <- im1080gpu*257/1000 + im2080gpu*367.2/1000 + piscesgpu*piscesgpuperf + ima40gpu*ima40gpuperf
 hawkgpuperf <- hawkgpu*253.38/1000
 totalgpuperf <- solgpuperf + hawkgpuperf
 ```
@@ -343,7 +361,7 @@ Row {.tabset}
 
 * Sol is a `r solnodes` node heterogeneous cluster launched on Oct 1, 2016 initially with `r ltsnodes+im1080nodes` nodes.
    * `r solcores` CPUs with `r sprintf("%4.2f",solmem/1000)`TB memory providing a total performance of `r solperf` TFLOPs.
-   * `r im1080gpu+im2080gpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda)` CUDA Cores) with `r solgpumem`GB memory providing a total performance of `r solgpuperf` TFLOPs.
+   * `r im1080gpu+im2080gpu+piscesgpu+ima40gpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda+piscescuda+ima40cuda)` CUDA Cores) with `r sprintf("%d",solgpumem)`GB memory providing a total performance of `r solgpuperf` TFLOPs.
    * Total Performance (frequency scaled for full AVX2/AVX512 support): `r solperf+solgpuperf` TFLOPs
    * SUs available: `r sprintf("%d", solcores*24)` daily or `r sprintf("%d", solcores*superyear)` annually
 * Hawk, an NSF Campus Cyberinfrastructure award funded `r hawknodes` node hybrid cluster put into production on Feb 1, 2021
@@ -354,7 +372,7 @@ Row {.tabset}
 
 * Total Performance
    * `r totalcores` CPUs with `r sprintf("%4.2f",totalmem/1000)`TB memory providing a total performance of `r totalperf` TFLOPs.
-   * `r im1080gpu+im2080gpu+hawkgpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda+teslat4cuda)` CUDA Cores) with `r gpumem`GB memory providing a total performance of `r totalgpuperf` TFLOPs.
+   * `r im1080gpu+im2080gpu+hawkgpu+piscesgpu+ima40gpu` GPUs (`r sprintf("%6d",im1080cuda+im2080cuda+teslat4cuda+piscescuda+ima40cuda)` CUDA Cores) with `r sprintf("%d",gpumem)`GB memory providing a total performance of `r totalgpuperf` TFLOPs.
    * Total Performance (frequency scaled for full AVX2/AVX512 support): `r totalperf+totalgpuperf` TFLOPs
    * SUs available: `r sprintf("%d", totalcores*24)` daily or `r sprintf("%d", totalcores*superyear)` annually
 
@@ -529,6 +547,10 @@ mydygraph(solmetric, "Total") %>% dyRangeSelector( dateWindow = dateWindow)
    * ASUS Geforce RTX 2080 TI PCIE 11GB GDDR5 (4x on 12 nodes)
 * `r chemnodes+healthnodes` Compute Nodes: Two 2.6GHz 18-core Intel Xeon Gold 6240, 24.75M Cache, 192GB 2933MHz RAM
 * `r infolabnodes` Compute Nodes: Two 2.1Gz 26-core Intel Xeon Gold 6230R, 35.75M Cache, 384GB 2933MHz RAM
+* `r piscesnodes` Compute Node: Two 3.0GHz 24-core Intel Xeon Gold 6248R, 35.75M Cache, 192GB 4000MHz RAM
+   * 5x NVIDIA A100 PCIE 40GB HBM2e
+* `r ima40nodes` Compute Nodes: Two 3.0GHz 16-core AMD EPYC 7302, 128M Cache, 3000MHz RAM
+   * 8x NVIDIA A40 PCIE 48GB GDDR6
 
 * Nodes contain
    * 1TB HDD
@@ -821,6 +843,40 @@ It provides `r infolabnodes*hawkcpucores` compute cores with a total performance
 
 These nodes are condo investments by Brian Chen, Computer Science and Engineering.
 
+Row {data-height=240}
+-------------------
+
+### pisces
+
+```{r fortnight_pisces}
+solmetric <- data$V34
+mydygraph(solmetric,"pisces") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r piscesnodes` 48-core Cascade Lake node that were made available to the HPC user community on April 5, 2022.
+It provides `r piscesnodes*piscescores` compute cores with a total performance of `r (piscesnodes*piscescores*piscescpuperf)/1000` TFLOPs, `r sprintf("%d",piscesnodes*piscescores*24)` SUs daily and `r sprintf("%d", (piscesnodes*piscescores)*superyear)` SUs annually.
+
+This node is a condo investments by Keith Moored, Mechanical Engineering. This node is exclusively for GPU jobs - a maximum of 10 cores can requested per GPU and charging rate of 48SU per SU in addition to 1SU per core. 
+
+Row {data-height=240}
+-------------------
+
+### ima40
+
+```{r fortnight_ima40}
+solmetric <- data$V36
+mydygraph(solmetric,"ima40") %>% dyRangeSelector( dateWindow = dateWindow)
+```
+
+### Description
+
+This partition provides `r ima40nodes` 32-core AMD EPYC nodes that were made available to the HPC user community on April 5, 2022.
+It provides `r ima40nodes*ima40cores` compute cores with a total performance of `r (ima40nodes*ima40cores*ima40cpuperf)/1000` TFLOPs, `r sprintf("%d",ima40nodes*ima40cores*24)` SUs daily and `r sprintf("%d", (ima40nodes*ima40cores)*superyear)` SUs annually.
+
+These nodes are condo investments by Wonpil Im, Biological Sciences. These nodes are exclusive for GPU jobs - a maximum of 4 cores can requested per GPU and charging rate of 24SU per SU in addition to 1SU per core. 
+
 
 This Month
 =========================================================================
@@ -1011,6 +1067,18 @@ mydygraph(dataslice$V30, "hawkgpu")
 mydygraph(dataslice$V32, "infolab")
 ```
 
+### pisces
+
+```{r thismonth_pisces}
+mydygraph(dataslice$V34, "pisces")
+```
+
+### ima40
+
+```{r thismonth_ima40}
+mydygraph(dataslice$V36, "ima40")
+```
+
 Row
 ----------------------------------------------------------------------
 
@@ -1081,6 +1149,8 @@ pq <- tribble(
       "hawkmem",sum(dataslice$V28),
       "hawkgpu",sum(dataslice$V30),
       "infolab",sum(dataslice$V32),
+      "pisces",sum(dataslice$V34),
+      "ima40",sum(dataslice$V36),
       "all-cpu",sum(dataslice$V12) )
 ```
 
@@ -1361,6 +1431,18 @@ mydygraph(dataslice$V30, "hawkgpu")
 mydygraph(dataslice$V32, "infolab")
 ```
 
+### pisces
+
+```{r prevmonth_pisces}
+mydygraph(dataslice$V34, "pisces")
+```
+
+### ima40
+
+```{r prevmonth_ima40}
+mydygraph(dataslice$V36, "ima40")
+```
+
 
 Row
 ----------------------------------------------------------------------
@@ -1432,6 +1514,8 @@ pq <- tribble(
       "hawkmem",sum(dataslice$V28),
       "hawkgpu",sum(dataslice$V30),
       "infolab",sum(dataslice$V32),
+      "pisces",sum(dataslice$V34),
+      "ima40",sum(dataslice$V36),
       "all-cpu",sum(dataslice$V12) )
 ```
 

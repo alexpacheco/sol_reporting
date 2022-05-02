@@ -66,7 +66,9 @@ hawkcpu <- rep(26,12)*52*dayspermonth*24
 hawkgpu <- rep(4,12)*48*dayspermonth*24
 hawkmem <- rep(4,12)*52*dayspermonth*24
 infolab <- rep(2,12)*52*dayspermonth*24
-ay2122su <- lts+im1080+eng+engc+himem+enge+engi+im2080+chem+health+hawkcpu+hawkgpu+hawkmem+infolab
+pisces <- rep(1,12)*48*c(31,30,31,31,28,31,30,31,30,31,31,30)*24
+ima40 <- rep(3,12)*32*c(31,30,31,31,28,31,30,31,30,31,31,30)*24
+ay2122su <- lts+im1080+eng+engc+himem+enge+engi+im2080+chem+health+hawkcpu+hawkgpu+hawkmem+infolab+pisces+ima40
 if ( Sys.Date() > as.Date("2022-09-30")){
   currmonth <- length(seq(from=as.Date("2021-10-01"), to=as.date("2022-09-30"), by='month'))
 } else {
@@ -123,7 +125,7 @@ jobsthisay %>% dmp_filter %>% summary %>%
 ### Total
 
 ```{r annualsummary-total}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% summary %>% partfilter('lts',lts) -> ltstotal
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% summary %>% partfilter('lts',lts) -> ltstotal
 jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% summary %>% partfilter('im1080',im1080) -> im1080total
 jobsthisay %>% filter(str_detect(Partition,'im2080')) %>% summary %>% partfilter('im2080',im2080) -> im2080total
 jobsthisay %>% filter(Partition=="eng" | Partition=="eng-gpu") %>% summary %>% partfilter('eng',eng) -> engtotal
@@ -137,15 +139,17 @@ jobsthisay %>% filter(str_detect(Partition,'hawkcpu') | str_detect(Partition,'ha
 jobsthisay %>% filter(str_detect(Partition,'hawkgpu') | str_detect(Partition,'hawktest')) %>% summary %>% partfilter('hawkgpu',hawkgpu) -> hawkgputotal
 jobsthisay %>% filter(str_detect(Partition,'hawkmem')) %>% summary %>% partfilter('hawkmem',hawkmem) -> hawkmemtotal
 jobsthisay %>% filter(str_detect(Partition,'infolab')) %>% summary %>% partfilter('infolab',infolab) -> infolabtotal
+jobsthisay %>% filter(str_detect(Partition,'pisces')) %>% summary %>% partfilter('pisces',pisces) -> piscestotal
+jobsthisay %>% filter(str_detect(Partition,'ima40')) %>% summary %>% partfilter('ima40',ima40) -> ima40total
 rbind(Total_SU_Jobs,ltstotal,im1080total,engtotal,engctotal,himemtotal,engetotal,engitotal,im2080total,chemtotal,healthtotal,
-      hawkcputotal,hawkgputotal,hawkmemtotal,infolabtotal) %>%
+      hawkcputotal,hawkgputotal,hawkmemtotal,infolabtotal,piscestotal,ima40total) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### Serial Jobs
 
 ```{r annualsummary-serial}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% 
   serial_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_serial
 jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   serial_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_serial
@@ -181,7 +185,7 @@ rbind(serialtotal,lts_serial,im1080_serial,eng_serial,engc_serial,himem_serial,e
 ### SMP Jobs
 
 ```{r annualsummary-smp}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% 
   smp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_smp
 jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   smp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_smp
@@ -217,7 +221,7 @@ rbind(smptotal,lts_smp,im1080_smp,eng_smp,engc_smp,himem_smp,enge_smp,engi_smp,i
 ### DMP Jobs
 
 ```{r annualsummary-dmp}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% 
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('lts',ltstotal) -> lts_dmp
 jobsthisay %>% filter(str_detect(Partition,'im1080')) %>% 
   dmp_filter %>% summary %>% parttotalfilter('im1080',im1080total) -> im1080_dmp
@@ -579,28 +583,28 @@ Row
 ### lts
 
 ```{r monthlypart-lts}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% monthly_summary %>% partpercent(lts[1:currmonth]) %>%
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% monthly_summary %>% partpercent(lts[1:currmonth]) %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### Serial Jobs
 
 ```{r monthlypart-lts-serial}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% serial_filter %>% monthly_summary %>% 
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% serial_filter %>% monthly_summary %>% 
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### SMP Jobs
 
 ```{r monthly-part-lts-smp}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% smp_filter %>% monthly_summary %>%
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% smp_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 
 ### DMP Jobs
 
 ```{r monthlypart-lts-dmp}
-jobsthisay %>% filter(str_detect(Partition,'lts')) %>% dmp_filter %>% monthly_summary %>%
+jobsthisay %>% filter(str_detect(Partition,'lts') | str_detect(Partition,'workshop')) %>% dmp_filter %>% monthly_summary %>%
   kable() %>% kable_styling(bootstrap_options = c("striped", "hover", "bordered", "condensed", "responsive") )
 ```
 

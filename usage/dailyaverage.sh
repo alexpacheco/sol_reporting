@@ -12,12 +12,12 @@ fi
 let first=$day+1
 let third=$day-1
 
-state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL"
+state="COMPLETED,CANCELLED,FAILED,TIMEOUT,PREEMPTED,NODE_FAIL,OUT_OF_MEMORY"
 start=$(date -d "$first day ago" +%Y-%m-%d-00:00:00)
 end=$(date -d "$third day ago" +%Y-%m-%d-23:59:59)
 
-cores=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem,health,hawkcpu,hawkmem,hawkgpu,infolab | awk '{s+=$1}END{print s}')
-dailysu=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem,health,hawkcpu,hawkmem,hawkgpu,infolab | awk '{s+=$1}END{print s*24}')
+cores=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem,health,hawkcpu,hawkmem,hawkgpu,infolab,pisces,ima40-gpu | awk '{s+=$1}END{print s}')
+dailysu=$(sinfo -N --Format=cpus -p lts,imlab,eng,engc,imlab,himem,enge,engi,im1080,im2080,chem,health,hawkcpu,hawkmem,hawkgpu,infolab,pisces,ima40-gpu | awk '{s+=$1}END{print s*24}')
 ltssu=$(sinfo -N --Format=cpus -p lts | awk '{s+=$1}END{print s*24}')
 im1080su=$(sinfo -N --Format=cpus -p imlab,imlab-hold,im1080 | awk '{s+=$1}END{print s*24}')
 engsu=$(sinfo -N --Format=cpus -p eng | awk '{s+=$1}END{print s*24}')
@@ -32,6 +32,8 @@ hawkcpusu=$(sinfo -N --Format=cpus -p hawkcpu | awk '{s+=$1}END{print s*24}')
 hawkmemsu=$(sinfo -N --Format=cpus -p hawkmem | awk '{s+=$1}END{print s*24}')
 hawkgpusu=$(sinfo -N --Format=cpus -p hawkgpu | awk '{s+=$1}END{print s*24}')
 infolabsu=$(sinfo -N --Format=cpus -p infolab | awk '{s+=$1}END{print s*24}')
+piscessu=$(sinfo -N --Format=cpus -p pisces | awk '{s+=$1}END{print s*24}')
+ima40su=$(sinfo -N --Format=cpus -p ima40-gpu | awk '{s+=$1}END{print s*24}')
 
 
 year=$(date -d "$day day ago" +%Y)
@@ -125,7 +127,17 @@ sacct -a --state=$state \
 	--starttime=$(date -d "$third day ago" +%Y-%m-%d-00:00:00) \
 	--endtime=$(date -d "$third day ago" +%Y-%m-%d-23:59:59) \
 	-r infolab -X -o Partition,CPUTimeRAW%15 | \
-	awk '{s+=$NF}END{cur=s/60/60;printf "%11.2f  %9.2f\n",cur,cur/'$infolabsu'*100}' >> $DIR/daily.dat
+	awk '{s+=$NF}END{cur=s/60/60;printf "%11.2f  %9.2f",cur,cur/'$infolabsu'*100}' >> $DIR/daily.dat
+sacct -a --state=$state \
+	--starttime=$(date -d "$third day ago" +%Y-%m-%d-00:00:00) \
+	--endtime=$(date -d "$third day ago" +%Y-%m-%d-23:59:59) \
+	-r pisces,pisces-long -X -o Partition,CPUTimeRAW%15 | \
+	awk '{s+=$NF}END{cur=s/60/60;printf "%11.2f  %9.2f",cur,cur/'$piscessu'*100}' >> $DIR/daily.dat
+sacct -a --state=$state \
+	--starttime=$(date -d "$third day ago" +%Y-%m-%d-00:00:00) \
+	--endtime=$(date -d "$third day ago" +%Y-%m-%d-23:59:59) \
+	-r ima40-gpu -X -o Partition,CPUTimeRAW%15 | \
+	awk '{s+=$NF}END{cur=s/60/60;printf "%11.2f  %9.2f\n",cur,cur/'$ima40su'*100}' >> $DIR/daily.dat
 
 tail -1 daily.dat | sed -e 's_/_-_g' | awk '{printf "%s %s",$1,"00:00:00 EST,"}{for (i=2;i<NF;i++){printf "%s,",$i}printf "%s\n",$NF}' >> daily.csv
 
@@ -223,7 +235,19 @@ sacct -a --state=$state \
 	--starttime=$start \
 	--endtime=$end \
 	-r infolab -X -o Partition,CPUTimeRAW%15 | \
-	awk '{s+=$NF}END{cur=s/60/60/3;printf "%11.2f  %9.2f\n",cur,cur/'$infolabsu'*100}' >> $DIR/$year-$month.daily
+	awk '{s+=$NF}END{cur=s/60/60/3;printf "%11.2f  %9.2f",cur,cur/'$infolabsu'*100}' >> $DIR/$year-$month.daily
+
+sacct -a --state=$state \
+	--starttime=$start \
+	--endtime=$end \
+	-r pisces,pisces-long -X -o Partition,CPUTimeRAW%15 | \
+	awk '{s+=$NF}END{cur=s/60/60/3;printf "%11.2f  %9.2f",cur,cur/'$piscessu'*100}' >> $DIR/$year-$month.daily
+
+sacct -a --state=$state \
+	--starttime=$start \
+	--endtime=$end \
+	-r ima40-gpu -X -o Partition,CPUTimeRAW%15 | \
+	awk '{s+=$NF}END{cur=s/60/60/3;printf "%11.2f  %9.2f\n",cur,cur/'$ima40su'*100}' >> $DIR/$year-$month.daily
 
 git add $DIR/$year-$month.daily daily.dat daily.csv
 

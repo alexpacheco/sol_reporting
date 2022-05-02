@@ -39,16 +39,16 @@ set output "daily_average.png"
 set xdata time
 set timefmt "%Y/%m/%d"
 set yrange [0:]
-set xrange ["2016/06/01":]
+set xrange ["2016/06/01":"2022/07/01"]
 set format x "%b %Y"
-set mxtics 86400
+#set mxtics 86400
 set xtics ( "2016/07/01", \
             "2017/01/01", "2017/07/01", \
             "2018/01/01", "2018/07/01", \
             "2019/01/01", "2019/07/01", \
             "2020/01/01", "2020/07/01", \
             "2021/01/01", "2021/07/01", \
-            "2022/01/01" )
+            "2022/01/01", "2022/07/01" )
 set format y "%.0s%c"
 set xtics rotate by 90 offset 0,0 right 
 set xtics font "Times Bold,16" 
