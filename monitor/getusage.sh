@@ -31,8 +31,8 @@ squeue --format="%.20N %.12P %.12b %.6D" -p lts-gpu,eng-gpu,im1080-gpu,im2080-gp
 
 export TMPDIR=/tmp
 export TMP=/tmp
-srun -p workshop -t 5 -n 1 singularity exec /share/Apps/virtualapps/rstudio/rstudio-r402-base.sif R -e "rmarkdown::render('load.Rmd')"
-scp -rp load.html webapps:/srv/projects/hpc/monitor/
+singularity exec /share/Apps/virtualapps/rstudio/rstudio-r402-base.sif R -e "rmarkdown::render('load.Rmd')"
+scp -r load.html webapps:/srv/projects/hpc/monitor/
 
 hour=$(date +%H)
 min=$(date +%M)

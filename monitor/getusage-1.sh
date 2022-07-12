@@ -42,15 +42,15 @@ export PATH=/share/Apps/usr/bin:/usr/local/bin:${PATH}
 export TMPDIR=/tmp
 export TMP=/tmp
 #R -e "rmarkdown::render('ay1718.Rmd')"
-#scp -rp ay1718.html webapps:/srv/projects/hpc/monitor/
+#scp -r ay1718.html webapps:/srv/projects/hpc/monitor/
 #R -e "rmarkdown::render('ay1819.Rmd')"
-#scp -rp ay1819.html webapps:/srv/projects/hpc/monitor/
+#scp -r ay1819.html webapps:/srv/projects/hpc/monitor/
 #R -e "rmarkdown::render('ay1920.Rmd')"
-#scp -rp ay1920.html webapps:/srv/projects/hpc/monitor/
+#scp -r ay1920.html webapps:/srv/projects/hpc/monitor/
 #R -e "rmarkdown::render('ay2021.Rmd')"
-#scp -rp ay2021.html webapps:/srv/projects/hpc/monitor/
+#scp -r ay2021.html webapps:/srv/projects/hpc/monitor/
 singularity exec /share/Apps/virtualapps/rstudio/rstudio-r402-base.sif R -e "rmarkdown::render('ay2122.Rmd'); rmarkdown::render('cy2022.Rmd')"
-scp -rp ay2122.html cy2022.html webapps:/srv/projects/hpc/monitor/
+scp -r ay2122.html cy2022.html webapps:/srv/projects/hpc/monitor/
 
 export PATH=/share/Apps/lusoft/opt/spack/linux-centos8-x86_64/gcc-8.3.1/rclone/1.53.3-meqi3gu/bin:$PATH
 rclone copy -P ~/monitor dropbox:sol_reporting/monitor

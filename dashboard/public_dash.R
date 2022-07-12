@@ -16,13 +16,17 @@ daily1819 <- read_delim('soldaily1819.csv', delim=";")
 daily1920 <- read_delim('soldaily1920.csv', delim=";")
 daily2021 <- read_delim('soldaily2021.csv', delim=";")
 daily2122 <- read_delim('soldaily2122.csv', delim=";")
+#daily2223 <- read_delim('/home/alp514/dashboard/soldaily2223.csv', delim=";")
 ay1617su <- c(580320.00,561600.00,580320.00,580320.00,524160.00,580320.00,699840.00,955296.00,924480.00,955296.00,955296.00,924480.00)
 ay1718su <- c(955296.00,924480.00,967200.00,967200.00,873600.00,967200.00,1117440.00,  1154688.00,1117440.00,1154688.00,1155480.00,1169280.00)
 ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,2188*30)*24
 ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
 ay2021su <- c(2404*31,2404*30,2404*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
 ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
+# If more resources get added modify this accordingly oct'22 - sep'23
+ay2223su <- c(4404*31,4404*30,4404*31,4404*31,4404*28,4404*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
 
+# Modify these to add daily2223 and ay2223su after Oct 1
 daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122)
 aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su)
 
@@ -278,7 +282,10 @@ jobs1819 <- read_delim(file = '../monitor/jobsalloc1819.csv.gz', delim = ";")
 jobs1920 <- read_delim(file = '../monitor/jobsalloc1920.csv.gz', delim = ";")
 jobs2021 <- read_delim(file = '../monitor/jobsalloc2021.csv.gz', delim = ";")
 jobs2122 <- read_delim(file = '../monitor/jobsalloc.csv.gz', delim = ";")
+# rename jobsalloc.csv.gz to jobsalloc2122.csv.gz on Oct 1 and use the following
+#jobs2223 <- read_delim(file = '../monitor/jobsalloc.csv.gz', delim = ";")
 jobsthismonth <- read_delim(file = '../monitor/jobs-0.csv', delim = ";")
+# Add jobs2223 on Oct 1
 jobs <- rbind(jobs1617,jobs1718,jobs1819,jobs1920,jobs2021,jobs2122,jobsthismonth)
 total <- jobs %>% mutate(SUTime=round(as.numeric(difftime(End,Start,units="hours"))*NCPUS,2)) %>% summarize(SUs=sum(SUTime),Jobs=n())
 cpuonly <- jobs %>% filter(!str_detect(Partition,"gpu")) %>% mutate(SUTime=round(as.numeric(difftime(End,Start,units="hours"))*NCPUS,2)) %>% summarize(SUs=sum(SUTime),Jobs=n())
@@ -303,43 +310,55 @@ cpu_gpu_jobs$sizingPolicy$padding <- "0"
 saveWidget(cpu_gpu_sus, file="cpu_gpu_sus.html")
 saveWidget(cpu_gpu_jobs, file="cpu_gpu_jobs.html")
 
-
+# AY 16-17
 pi1617 <- as.numeric(daily1617 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user1617 <- as.numeric(daily1617 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept1617 <- as.numeric(daily1617 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept1617 <- as.numeric(daily1617 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs1617 <- as.numeric(daily1617 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus1617 <- as.numeric(daily1617 %>% summarize(SUs=sum(as.double(Total))))
+# AY 17-18
 pi1718 <- as.numeric(daily1718 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user1718 <- as.numeric(daily1718 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept1718 <- as.numeric(daily1718 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept1718 <- as.numeric(daily1718 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs1718 <- as.numeric(daily1718 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus1718 <- as.numeric(daily1718 %>% summarize(SUs=sum(as.double(Total))))
+# AY 18-19
 pi1819 <- as.numeric(daily1819 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user1819 <- as.numeric(daily1819 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept1819 <- as.numeric(daily1819 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept1819 <- as.numeric(daily1819 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs1819 <- as.numeric(daily1819 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus1819 <- as.numeric(daily1819 %>% summarize(SUs=sum(as.double(Total))))
+# AY 19-20
 pi1920 <- as.numeric(daily1920 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user1920 <- as.numeric(daily1920 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept1920 <- as.numeric(daily1920 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept1920 <- as.numeric(daily1920 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs1920 <- as.numeric(daily1920 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus1920 <- as.numeric(daily1920 %>% summarize(SUs=sum(as.double(Total))))
+# AY 20-21
 pi2021 <- as.numeric(daily2021 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user2021 <- as.numeric(daily2021 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept2021 <- as.numeric(daily2021 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept2021 <- as.numeric(daily2021 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs2021 <- as.numeric(daily2021 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus2021 <- as.numeric(daily2021 %>% summarize(SUs=sum(as.double(Total))))
+# AY 21-22
 pi2122 <- as.numeric(daily2122 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
 user2122 <- as.numeric(daily2122 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
 pidept2122 <- as.numeric(daily2122 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
 dept2122 <- as.numeric(daily2122 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
 jobs2122 <- as.numeric(daily2122 %>% summarize(Jobs=sum(as.double(TotalJ))))
 sus2122 <- as.numeric(daily2122 %>% summarize(SUs=sum(as.double(Total))))
+# AY 22-23
+#pi2223 <- as.numeric(daily2223 %>% group_by(PI) %>% summarize(n=n()) %>% tally())
+#user2223 <- as.numeric(daily2223 %>% group_by(Name) %>% summarize(n=n()) %>% tally())
+#pidept2223 <- as.numeric(daily2223 %>% group_by(PIDept) %>% summarize(n=n()) %>% tally())
+#dept2223 <- as.numeric(daily2223 %>% group_by(Department) %>% summarize(n=n()) %>% tally())
+#jobs2223 <- as.numeric(daily2223 %>% summarize(Jobs=sum(as.double(TotalJ))))
+#sus2223 <- as.numeric(daily2223 %>% summarize(SUs=sum(as.double(Total))))
 
 	
 tribble(~Year,~Users,~Department,~PI,~PIDept,~SUs,~Jobs,
@@ -350,6 +369,8 @@ tribble(~Year,~Users,~Department,~PI,~PIDept,~SUs,~Jobs,
   "2020-21",user2021,dept2021,pi2021,pidept2021,sus2021,jobs2021,
   "2021-22",user2122,dept2122,pi2122,pidept2122,sus2122,jobs2122
 	 ) -> dailysummary
+# Add for 2022-23
+#  "2022-23",user2223,dept2223,pi2223,pidept2223,sus2223,jobs2223
 
 annual_summary <- daily %>%
 	group_by(Year=floor_date(as.Date(Day),"year")) %>%
@@ -435,6 +456,7 @@ dailypowerusage <- dygraph( xts(cbind(dailypower$Energy), order.by = dailypower$
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 dailypowerusage$sizingPolicy$padding <- "0"
 saveWidget(dailypowerusage, file="dailypowerusage.html")
@@ -466,6 +488,7 @@ monthlypowerusage <- dygraph( xts(cbind(monthlypower$Power,monthlypower$Energy),
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 monthlypowerusage$sizingPolicy$padding <- "0"
 saveWidget(monthlypowerusage, file="monthlypowerusage.html")

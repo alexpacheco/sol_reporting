@@ -51,8 +51,10 @@ daily1819 <- read_delim('/home/alp514/dashboard/soldaily1819.csv', delim=";")
 daily1920 <- read_delim('/home/alp514/dashboard/soldaily1920.csv', delim=";")
 daily2021 <- read_delim('/home/alp514/dashboard/soldaily2021.csv', delim=";")
 daily2122 <- read_delim('/home/alp514/dashboard/soldaily2122.csv', delim=";")
+#daily2223 <- read_delim('/home/alp514/dashboard/soldaily2223.csv', delim=";")
 
 daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122)
+# daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122,daily2223)
 
 # get usage for last 14 days
 fortnight <- daily %>%
@@ -93,6 +95,10 @@ ay2122filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2021-10-01") & Month < as.Date("2022-10-01"))
 }
+ay2223filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2022-10-01") & Month < as.Date("2023-10-01"))
+}
 cy2016filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2016-01-01") & Month < as.Date("2017-01-01"))
@@ -120,6 +126,10 @@ cy2021filter <- function(data) {
 cy2022filter <- function(data) {
   data %>%
    filter(Month >= as.Date("2022-01-01") & Month < as.Date("2023-01-01"))
+}
+cy2023filter <- function(data) {
+  data %>%
+   filter(Month >= as.Date("2023-01-01") & Month < as.Date("2024-01-01"))
 }
 
 currentDate <- Sys.Date()
@@ -156,6 +166,8 @@ ay1819su <- c(1624*31,1696*30,1720*31,2152*31,2152*28,2152*31,2188*30,2188*31,21
 ay1920su <- c(2188*31,2188*30,2188*31,2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30)*24
 ay2021su <- c(2404*31,2404*30,2404*31,4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30)*24
 ay2122su <- c(4260*31,4260*30,4260*31,4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
+# If more resources get added modify this accordingly oct'22 - sep'23
+ay2223su <- c(4404*31,4404*30,4404*31,4404*31,4404*28,4404*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30)*24
 
 # tatal available by CY
 cy2016su <- c(580320.00,561600.00,580320.00)
@@ -165,15 +177,18 @@ cy2019su <- c(2152*31,2152*28,2152*31,2188*30,2188*31,2188*30,2188*31,2188*31,21
 cy2020su <- c(2188*31,2188*29,2188*31,2188*30,2188*31,2332*30,2332*31,2404*31,2404*30,2404*31,2404*30,2404*31)*24
 cy2021su <- c(4260*31,4260*28,4260*31,4260*30,4260*31,4260*30,4260*31,4260*31,4260*30,4260*31,4260*30,4260*31)*24
 cy2022su <- c(4260*31,4260*28,4260*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30,4404*31,4404*30,4404*31)*24
+cy2023su <- c(4404*31,4404*28,4404*31,4404*30,4404*31,4404*30,4404*31,4404*31,4404*30,4404*31,4404*30,4404*31)*24
 
 # cummalative total by AY
 aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su)
+# aysu <- c(ay1617su,ay1718su,ay1819su,ay1920su,ay2021su,ay2122su,ay2223su)
 		
 # Details of Sol nodes
 # If cpu frequency is reduced
-#   Haswell & Broadwell provide 16 FLOP per cycle for AVX2 or AVX256 extensions, while
-#   Skylake provides 32 FLOP per cycle for AVX512 extension
+#   Haswell, Broadwell & AMD EPYC provide 16 FLOP per cycle for AVX2 or AVX256 extensions, while
+#   Skylake, Cascade Lake provides 32 FLOP per cycle for AVX512 extension
 # GFLOPs Performance = FLOPs/cycle * number of cores * cpu freq in GHz 
+# As more resource get added, modify below
 avx256 <- 16
 avx512 <- 32
 ltsnodes <- 9
@@ -247,31 +262,44 @@ infolab <- infolabnodes *hawkcpucores*24
 pisces <- piscesnodes * piscescores*24 
 ima40 <- ima40nodes * ima40cores*24 
 
+# number of sus per year
 all <- lts + im1080 + eng + engc + himem + enge + engi + im2080 + chem + health + hawk + infolab + pisces + ima40
 
+# number of nodes
 solnodes <- ltsnodes + im1080nodes + engnodes + engcnodes + himemnodes + engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes + infolabnodes + piscesnodes + ima40nodes
 hawknodes <- hawkcpunodes + hawkmemnodes + hawkgpunodes
 totalnodes <- solnodes + hawknodes
+
+# number of cores
 solcores <- ltsnodes*ltscores + (im1080nodes + engnodes)*engcores + engcnodes*engccores + himemnodes*himemcores + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes )*engecores + infolabnodes*hawkcpucores + piscesnodes*piscescores + ima40nodes*ima40cores
 hawkcores <- (hawkcpunodes + hawkmemnodes)*hawkcpucores + hawkgpunodes*hawkgpucores
 totalcores <- solcores + hawkcores
+
+# cpu memory
 solmem <- (ltsnodes + im1080nodes + engnodes) * 128 + engcnodes * 64 + himemnodes * 512 + (engenodes + enginodes + engecnodes + im2080nodes + chemnodes + healthnodes)  * 192 + infolabnodes * 384 + piscesnodes * 192 + ima40nodes * 256
 hawkmem <- hawkcpunodes * 384 + hawkmemnodes * 1536 + hawkgpunodes * 192
 totalmem <- solmem + hawkmem
+
+# cpu performance
 solperf <- (ltsnodes*ltscores*ltsperf + (im1080nodes + engnodes)*im1080cores*im1080perf + engcnodes*engccores*engcperf + himemnodes*himemcores*himemperf + 
      (engenodes+enginodes+engecnodes+im2080nodes)*engecores*engeperf + chemnodes*chemcores*chemperf + healthnodes*healthcores*healthperf)/1000 + 
      infolabnodes*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000 + piscesnodes*piscescores*piscescpuperf/1000 + ima40nodes*ima40cores*ima40cpuperf/1000
 hawkperf <- (hawkcpunodes + hawkmemnodes)*hawkcpucores*hawkcpuperf/1000 + hawkgpunodes*hawkgpucores*hawkgpuperf/1000
 totalperf <- solperf + hawkperf
 
+# gpu memory
 solgpumem <- im1080gpu * 8 + im2080gpu * 11 + piscesgpu * 40 + ima40gpu * 48
 hawkgpumem <- hawkgpu * 16
 gpumem <- solgpumem + hawkgpumem
+
+# number of cuda cores
 im1080cuda <- im1080gpu * 2560
 im2080cuda <- im2080gpu * 4352
 teslat4cuda <- hawkgpu * 2560
 piscescuda <- piscesgpu * 6912
 ima40cuda <- ima40gpu * 10752
+
+# gpu performance
 solgpuperf <- im1080gpu*257/1000 + im2080gpu*367.2/1000 + piscesgpu*piscesgpuperf + ima40gpu*ima40gpuperf
 hawkgpuperf <- hawkgpu*253.38/1000
 totalgpuperf <- solgpuperf + hawkgpuperf
@@ -407,7 +435,8 @@ mydygraph(solmetric, "Total") %>%
   dyEvent("2019-04-01", "81 nodes, 2188 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-05-31", "85 nodes, 2332 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
-  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") 
+  dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top")
 ```
 
 ### GPU Usage
@@ -465,6 +494,7 @@ dygraph( xts(cbind(dailypower$Energy), order.by = dailypower$Date)) %>%
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 ```
 
@@ -1818,6 +1848,7 @@ dygraph( xts(cbind(monthly_summary$Total,monthly_summary$Available), order.by = 
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 ```
 
@@ -1846,6 +1877,7 @@ dygraph( xts(monthly_summary$Jobs, order.by = monthly_summary$Month)) %>%
   dyEvent("2020-08-01", "87 nodes, 2404 cores, 120 GPUs", labelLoc = "top") %>%
   dyEvent("2020-11-12", "Hawk: User Friendly", labelLoc = "top") %>%
   dyEvent("2021-02-01", "Hawk in Production", labelLoc = "top") %>%
+  dyEvent("2022-04-05", "127 nodes, 4404 cores, 181 GPUs", labelLoc = "top") %>%
   dyRangeSelector( dateWindow = dateWindow)
 ```
 
@@ -2245,6 +2277,11 @@ monthly %>%
 ```{r child = here::here("Rmds","ay2122.Rmd")}
 ```
 
+```{r} 
+# Add for AY 2223 here
+#child = here::here("Rmds","ay2223.Rmd")}
+```
+
 ```{r child = here::here("Rmds","cy2016.Rmd")}
 ```
 	
@@ -2266,6 +2303,11 @@ monthly %>%
 ```{r child = here::here("Rmds","cy2022.Rmd")}
 ```
  
+```{r}
+# Add for CY 2023 here
+# child = here::here("Rmds","cy2023.Rmd")}
+```
+
 
  
 

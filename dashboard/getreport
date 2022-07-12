@@ -55,7 +55,7 @@ do
         fi
         piid=$(echo $alloc | awk -F_ '{print $1}' )
 	case ${alloc} in
-	    lts|hpc2017|hpc2018|hpc2021*)
+	    lts|hpc20*)
 		if [[ "${alloc}" == "lts" ]]
 		then
 		    pi=" LTS;"
@@ -162,9 +162,9 @@ do
 		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=ebw210 | grep "Status:" | awk -F : '{printf "%s;",$2}')
 		;;
 	    coh_*)
-		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hgs219 | grep "ou:" | awk -F: '{printf "%s;",$2}')
+		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=thm220 | grep "ou:" | awk -F: '{printf "%s;",$2}')
                 pi=$pidept
-		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=hsg219 | grep "Status:" | awk -F : '{printf "%s;",$2}')
+		pistatus=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=thm220 | grep "Status:" | awk -F : '{printf "%s;",$2}')
                 ;;
 	    ise|ise_*)
 		pidept=$(ldapsearch -x -LLL -h ldap.lehigh.edu -b dc=lehigh,dc=edu uid=tkr2 | grep "ou:" | awk -F: '{printf "%s;",$2}')

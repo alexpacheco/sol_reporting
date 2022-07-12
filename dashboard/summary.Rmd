@@ -35,8 +35,10 @@ daily1819 <- read_delim('soldaily1819.csv', delim=";")
 daily1920 <- read_delim('soldaily1920.csv', delim=";")
 daily2021 <- read_delim('soldaily2021.csv', delim=";")
 daily2122 <- read_delim('soldaily2122.csv', delim=";")
+#daily2223 <- read_delim('/home/alp514/dashboard/soldaily2223.csv', delim=";")
 
 daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122)
+# daily <- rbind(daily1617,daily1718,daily1819,daily1920,daily2021,daily2122,daily2223)
 
 # https://stackoverflow.com/questions/28159936/format-numbers-with-million-m-and-billion-b-suffixes
 compress <- function(tx) {
